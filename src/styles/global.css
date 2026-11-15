@@ -1,0 +1,44 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    border-radius: 0px !important;
+    box-shadow: none !important;
+  }
+
+  html,
+  body {
+    background-color: #0A0A0B;
+    color: #F2EFE9;
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    margin: 0;
+    padding: 0;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Custom neo-brutalist hairline scrollbar */
+  ::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #0A0A0B;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #262629;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #8A8882;
+  }
+
+  ::selection {
+    background: #E62E25;
+    color: #0A0A0B;
+  }
+}

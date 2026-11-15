@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+
+# Production build output
+dist/
+
+# Astro cache & generated types
+.astro/
+
+# Environment files
+.env
+.env.production
+.env.local
+
+# Vercel
+.vercel/
+
+# Database
+data/
+*.db
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+
+# OS / Editor files
+.DS_Store
+Thumbs.db
+*.log
