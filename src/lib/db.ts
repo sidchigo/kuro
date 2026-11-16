@@ -7,12 +7,27 @@ import * as schema from './schema';
 import { users } from './schema';
 import { count } from 'drizzle-orm';
 
-const dataDir = path.resolve(process.cwd(), 'data');
-if (!fs.existsSync(dataDir)) {
-  fs.mkdirSync(dataDir, { recursive: true });
+const isRemoteDb =
+  typeof process.env.DATABASE_URL === 'string' &&
+  (process.env.DATABASE_URL.startsWith('libsql://') ||
+    process.env.DATABASE_URL.startsWith('http://') ||
+    process.env.DATABASE_URL.startsWith('https://'));
+
+let dbUrl: string = process.env.DATABASE_URL || '';
+
+if (!isRemoteDb && !dbUrl) {
+  const isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
+  const dataDir = isServerless ? '/tmp' : path.resolve(process.cwd(), 'data');
+  try {
+    if (!fs.existsSync(dataDir)) {
+      fs.mkdirSync(dataDir, { recursive: true });
+    }
+  } catch (err) {
+    console.warn('[DB] Could not create local data directory:', err);
+  }
+  dbUrl = `file:${path.join(dataDir, 'kuro.db')}`;
 }
 
-const dbUrl = process.env.DATABASE_URL || `file:${path.join(dataDir, 'kuro.db')}`;
 const authToken = process.env.DATABASE_AUTH_TOKEN;
 
 export const client = createClient({
