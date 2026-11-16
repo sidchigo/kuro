@@ -180,7 +180,7 @@ kuro. features a modern, type-safe persistence layer using **Drizzle ORM** with 
 ### Guest Session Privacy & Data Isolation
 - **No Cross-User Leaks**: Non-authenticated visitors operate in a read-only exploration mode. Watchlists, recent seeds, and seen blacklists remain strictly empty for guest sessions.
 - **Editorial Sign-In Prompts**: Guest interactions targeting personal archives (e.g., adding to watchlist, rating/blacklisting a film, accessing saved seeds) trigger an in-place editorial authentication modal.
-- **Admin Data Binding**: All baseline and pre-existing horror archives (12 verified seen films with ratings, recent seeds with sentence prompts, and watchlist items) are bound strictly to the `admin` user account (`user_id = 1`) in `node:sqlite`.
+- **Admin Account**: Default admin (`admin`) is initialized upon first startup with full RBAC administrative privileges.
 
 ### Multi-User Database Schema
 
