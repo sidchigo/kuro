@@ -17,8 +17,8 @@ export interface WaterfallResult {
  * - vote_average >= 4.8
  * - release_date is not in the future
  * - language constraints (targetLanguageCodes if specified, else preset === 'foreign')
- * - 'cult': vote_count >= 30 && vote_count <= 1500
- * - 'all' / 'foreign': vote_count >= 30
+ * - 'cult': vote_count >= 35 && vote_count <= 1500
+ * - 'all' / 'foreign': vote_count >= 35
  */
 function passesFilters(
   movie: TMDBRawMovie,
@@ -53,9 +53,9 @@ function passesFilters(
   }
 
   if (preset === 'cult') {
-    return count >= 30 && count <= 1500;
+    return count >= 35 && count <= 1500;
   }
-  return count >= 30;
+  return count >= 35;
 }
 
 export function normalizeTitle(t?: string | null): string {
@@ -139,19 +139,23 @@ export async function executeWaterfall(
     }
   }
 
-  // --- TIER 2: Broader Horror Discovery (Language-Agnostic, if < 5 candidates) ---
-  if (candidateMap.size < 5 && apiKey) {
+  // --- TIER 2: Broader Horror Discovery (gather ~30-50 candidates) ---
+  if (candidateMap.size < 35 && apiKey) {
     tiersReached.push(2);
     try {
-      const broaderMovies = await queryDiscoverMovies(preset, targetLanguageCodes, apiKey);
-      addMovies(broaderMovies);
+      const broaderMovies1 = await queryDiscoverMovies(preset, targetLanguageCodes, apiKey, 1);
+      addMovies(broaderMovies1);
+      if (candidateMap.size < 35) {
+        const broaderMovies2 = await queryDiscoverMovies(preset, targetLanguageCodes, apiKey, 2);
+        addMovies(broaderMovies2);
+      }
     } catch (e) {
       console.error('[Waterfall Tier 2] Failed:', e);
     }
   }
 
-  // Cap final candidate array at 20 items
-  const finalCandidates = Array.from(candidateMap.values()).slice(0, 20);
+  // Gather ~30-50 horror/thriller candidates (cap at 50)
+  const finalCandidates = Array.from(candidateMap.values()).slice(0, 50);
 
   return {
     candidates: finalCandidates,

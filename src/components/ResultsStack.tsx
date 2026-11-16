@@ -83,7 +83,20 @@ export default function ResultsStack({
                     </h2>
                     <p className="font-mono text-[10px] text-[#8A8882] uppercase tracking-wider mt-0.5">
                       {movie.year || '----'} · [{movie.originalLanguage}] · {movie.runtime} MIN
+                      {typeof movie.similarity === 'number' && (
+                        <span className="ml-2 text-[#E62E25] font-bold">
+                          · {Math.round(movie.similarity * 100)}% MATCH
+                        </span>
+                      )}
                     </p>
+
+                    {/* Zero-LLM "Why Recommended" Semantic Trope-Anchor Badge */}
+                    {movie.explanation && (
+                      <div className="mt-2 py-1 px-2 border-l-2 border-[#E62E25] bg-[#121214] font-mono text-[10px]">
+                        <span className="text-[#E62E25] font-bold mr-1.5 uppercase">WHY:</span>
+                        <span className="text-[#F2EFE9]/90">{movie.explanation}</span>
+                      </div>
+                    )}
 
                     {/* 2-Sentence Grounded Pitch */}
                     <p className="font-sans text-xs text-[#F2EFE9]/90 leading-relaxed mt-2.5">

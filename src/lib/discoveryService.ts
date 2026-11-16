@@ -1,31 +1,98 @@
-import type { DiscoverRequest, DiscoverResponse, HorrorMatch } from './types';
+import type { DiscoverRequest, DiscoverResponse, HorrorMatch, TMDBRawMovie, SeedMovie } from './types';
 import { fetchSeedMovieDetails, hydrateWinningMovies, TMDB_IMAGE_BASE } from './tmdb';
-import { decomposeIntent, rerankCandidates } from './llm';
 import { executeWaterfall, normalizeTitle } from './waterfall';
+import {
+  formatUserQuery,
+  formatMovieDocument,
+  embedQuery,
+  embedCandidateDocuments,
+  dotProduct,
+  getServerVibeAnchors,
+} from './embeddings';
+import { vectorCache } from './vectorCache';
+import { createPitch, createCatchWarning, generateDeterministicExplanation } from './matchFormatters';
 
-export async function processDiscovery(request: DiscoverRequest): Promise<DiscoverResponse> {
+export { createPitch, createCatchWarning };
+
+const LANGUAGE_NAME_MAP: Record<string, string> = {
+  indonesian: 'id',
+  indonesia: 'id',
+  thai: 'th',
+  thailand: 'th',
+  korean: 'ko',
+  korea: 'ko',
+  japanese: 'ja',
+  japan: 'ja',
+  spanish: 'es',
+  spain: 'es',
+  mexican: 'es',
+  french: 'fr',
+  france: 'fr',
+  german: 'de',
+  germany: 'de',
+  italian: 'it',
+  italy: 'it',
+  swedish: 'sv',
+  sweden: 'sv',
+  norwegian: 'no',
+  norway: 'no',
+  tagalog: 'tl',
+  filipino: 'tl',
+};
+
+function extractLanguageCodes(sentence: string, explicitCodes?: string[]): string[] | undefined {
+  if (explicitCodes && explicitCodes.length > 0) return explicitCodes;
+  const lower = sentence.toLowerCase();
+  const codes: string[] = [];
+  for (const [kw, code] of Object.entries(LANGUAGE_NAME_MAP)) {
+    const regex = new RegExp(`\\b${kw}\\b`, 'i');
+    if (regex.test(lower) && !codes.includes(code)) {
+      codes.push(code);
+    }
+  }
+  return codes.length > 0 ? codes : undefined;
+}
+
+function extractKeywords(sentence: string, seed: SeedMovie): string[] {
+  const stopWords = new Set([
+    'the', 'and', 'for', 'with', 'that', 'this', 'from', 'about', 'just', 'movie', 'film',
+    'like', 'want', 'more', 'some', 'into', 'what', 'stayed', 'have', 'been', 'were', 'when',
+    'which', 'there', 'their', 'they', 'them', 'than', 'then', 'also', 'such', 'very', 'only',
+  ]);
+  const words = sentence
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .split(/\s+/)
+    .filter((w) => w.length > 2 && !stopWords.has(w));
+
+  const seedKeywords = (seed.keywords || []).map((k) => k.toLowerCase());
+  return Array.from(new Set([...words, ...seedKeywords])).slice(0, 5);
+}
+
+export async function getDiscoveryCandidates(request: DiscoverRequest): Promise<{
+  seed: SeedMovie | null;
+  candidates: TMDBRawMovie[];
+  candidateCount: number;
+  fallbackReason?: string;
+}> {
   const { movieId, sentence = '', preset = 'all', blacklist = [], blacklistTitles = [] } = request;
 
-  // 1. Fetch seed movie details
   const seed = await fetchSeedMovieDetails(movieId);
   if (!seed) {
     return {
-      matches: [],
+      seed: null,
+      candidates: [],
       candidateCount: 0,
       fallbackReason: `Seed film ID ${movieId} not found in archive.`,
     };
   }
 
-  // Stage 1: Seed Hydration & Intent Decomposition (LLM Call #1)
-  const intent = await decomposeIntent(seed, sentence, preset);
+  const targetLanguageCodes = extractLanguageCodes(sentence, request.targetLanguageCodes);
+  const keywordTerms = extractKeywords(sentence, seed);
 
-  // Merge any explicit language codes from request or intent
-  const targetLanguageCodes = request.targetLanguageCodes || intent.targetLanguageCodes;
-
-  // Stage 2: Deterministic 3-Tier TMDB Waterfall
   const { candidates } = await executeWaterfall(
     seed,
-    intent.tmdbKeywordTerms,
+    keywordTerms,
     preset,
     blacklist,
     targetLanguageCodes,
@@ -33,91 +100,153 @@ export async function processDiscovery(request: DiscoverRequest): Promise<Discov
     blacklistTitles
   );
 
-  if (candidates.length === 0) {
-    return {
-      matches: [],
-      candidateCount: 0,
-      fallbackReason: 'No horror candidates matched the filter constraints.',
-    };
-  }
-
-  // Stage 3: Grounded Cross-Encoder Reranking (LLM Call #2)
-  const rerankResult = await rerankCandidates(candidates, sentence, intent.avoidTropes, seed.title);
-
-  // Find candidate objects for winning IDs
-  const candidateMap = new Map(candidates.map((c) => [c.id, c]));
   const blacklistSet = new Set<number>([seed.id, ...blacklist]);
   const seedTitleNorm = normalizeTitle(seed.title);
   const blacklistTitleSet = new Set<string>(
-    [seedTitleNorm, ...blacklistTitles.map(normalizeTitle)].filter(Boolean)
+    [seedTitleNorm, ...(blacklistTitles || []).map(normalizeTitle)].filter(Boolean)
   );
 
-  let winningMatches = rerankResult.matches.filter((m) => {
-    const raw = candidateMap.get(m.id);
-    if (!raw) return false;
-    if (blacklistSet.has(m.id)) return false;
-    const norm = normalizeTitle(raw.title);
+  const eligibleCandidates = candidates.filter((c) => {
+    if (blacklistSet.has(c.id)) return false;
+    const norm = normalizeTitle(c.title);
     if (norm && blacklistTitleSet.has(norm)) return false;
-    if (raw.original_title) {
-      const origNorm = normalizeTitle(raw.original_title);
+    if (c.original_title) {
+      const origNorm = normalizeTitle(c.original_title);
       if (origNorm && blacklistTitleSet.has(origNorm)) return false;
     }
+    const rating = c.vote_average ?? 0;
+    if (rating < 4.8) return false;
+    const count = c.vote_count ?? 0;
+    if (count < 35) return false;
     return true;
   });
 
-  // If no matches survived validation, fallback to top candidates with overview-specific plots (NO mock template strings)
-  if (winningMatches.length === 0) {
-    const safeCandidates = candidates.filter((c) => {
-      if (blacklistSet.has(c.id)) return false;
-      const norm = normalizeTitle(c.title);
-      if (norm && blacklistTitleSet.has(norm)) return false;
-      if (c.original_title) {
-        const origNorm = normalizeTitle(c.original_title);
-        if (origNorm && blacklistTitleSet.has(origNorm)) return false;
-      }
-      return true;
-    });
+  return {
+    seed,
+    candidates: eligibleCandidates,
+    candidateCount: candidates.length,
+    fallbackReason:
+      eligibleCandidates.length === 0
+        ? 'No horror candidates matched the filter constraints.'
+        : undefined,
+  };
+}
 
-    winningMatches = safeCandidates.slice(0, 3).map((c) => {
-      const sentences = (c.overview || '').split(/(?<=[.?!])\s+/);
-      const plot = sentences.slice(0, 2).join(' ') || c.overview || 'a relentless supernatural occurrence';
-      return {
-        id: c.id,
-        pitch: `${c.title} delves into ${plot.replace(/\.$/, '')}. It delivers an escalating, grounded dread centered on ritual and spiritual collapse.`,
-        catchWarning: 'Deliberate, slow-burn pacing that demands patience before the dread surfaces.',
-      };
-    });
+export async function processDiscovery(request: DiscoverRequest): Promise<DiscoverResponse> {
+  const { sentence = '' } = request;
+  const candidateResult = await getDiscoveryCandidates(request);
+
+  if (!candidateResult.seed || candidateResult.candidates.length === 0) {
+    return {
+      matches: [],
+      candidateCount: candidateResult.candidateCount,
+      fallbackReason: candidateResult.fallbackReason,
+    };
   }
 
-  // Hydrate external_ids (imdb_id), runtime, and director in parallel
-  const winningIds = winningMatches.map((m) => m.id);
-  const hydrationMap = await hydrateWinningMovies(winningIds);
+  const seed = candidateResult.seed;
+  const eligibleCandidates = candidateResult.candidates;
 
-  const hydratedMatches: HorrorMatch[] = winningMatches.map((w) => {
-    const raw = candidateMap.get(w.id)!;
-    const extra = hydrationMap.get(w.id);
+  // Stage 3: EmbeddingGemma-300M Semantic Ranking with Persistent Vector Cache
+  const userQuery = formatUserQuery(sentence, seed);
+  const queryVector = await embedQuery(userQuery);
+
+  // 1. Vector Cache Lookup: retrieve already-embedded movies in <5ms
+  const eligibleIds = eligibleCandidates.map((c) => c.id);
+  const cachedVectorsMap = await vectorCache.getMany(eligibleIds);
+
+  const missCandidates: TMDBRawMovie[] = [];
+  const vectorMap = new Map<number, Float32Array>();
+
+  for (const candidate of eligibleCandidates) {
+    const cached = cachedVectorsMap.get(candidate.id);
+    if (cached) {
+      vectorMap.set(candidate.id, cached);
+    } else {
+      missCandidates.push(candidate);
+    }
+  }
+
+  // 2. Delta Inference: run EmbeddingGemma inference ONLY on cache-miss movies
+  if (missCandidates.length > 0) {
+    const missDocTexts = missCandidates.map(formatMovieDocument);
+    const computedMissVectors = await embedCandidateDocuments(missDocTexts);
+
+    const toCache: Array<{ tmdbId: number; vector: Float32Array }> = [];
+    for (let i = 0; i < missCandidates.length; i++) {
+      const movie = missCandidates[i];
+      const vec = computedMissVectors[i];
+      vectorMap.set(movie.id, vec);
+      toCache.push({ tmdbId: movie.id, vector: vec });
+    }
+
+    // Persist newly computed vectors in vectorCache
+    await vectorCache.setMany(toCache);
+  }
+
+  // 3. Dot-Product Ranking against normalized 256-d query vector
+  const scored = eligibleCandidates.map((movie) => {
+    const movieVector = vectorMap.get(movie.id)!;
+    const similarity = dotProduct(queryVector, movieVector);
+    return {
+      movie,
+      similarity,
+    };
+  });
+
+  // Sort descending by cosine similarity
+  scored.sort((a, b) => b.similarity - a.similarity);
+
+  // Filter out wildly off-vibe outliers with minimum similarity threshold
+  const MIN_SIMILARITY_THRESHOLD = 0.22;
+  const aboveThreshold = scored.filter((s) => s.similarity >= MIN_SIMILARITY_THRESHOLD);
+  const winningScored = (aboveThreshold.length > 0 ? aboveThreshold : scored).slice(0, 3);
+
+  // Hydrate external_ids (imdb_id), runtime, and director in parallel
+  const winningIds = winningScored.map((s) => s.movie.id);
+  const [hydrationMap, anchorsMap] = await Promise.all([
+    hydrateWinningMovies(winningIds),
+    getServerVibeAnchors(),
+  ]);
+
+  const hydratedMatches: HorrorMatch[] = winningScored.map(({ movie: raw, similarity }) => {
+    const extra = hydrationMap.get(raw.id);
     const year = raw.release_date ? parseInt(raw.release_date.split('-')[0], 10) : 0;
-    const posterPath = (extra?.posterPath !== undefined && extra?.posterPath !== null) ? extra.posterPath : (raw.poster_path ?? null);
+    const posterPath =
+      extra?.posterPath !== undefined && extra?.posterPath !== null
+        ? extra.posterPath
+        : raw.poster_path ?? null;
+    const runtime = extra?.runtime || raw.runtime || 95;
+    const movieVec = vectorMap.get(raw.id)!;
+    const { explanation, topThemes } = generateDeterministicExplanation(
+      raw,
+      movieVec,
+      queryVector,
+      similarity,
+      anchorsMap
+    );
 
     return {
-      id: w.id,
+      id: raw.id,
       title: raw.title,
       year,
       originalLanguage: raw.original_language?.toUpperCase() || 'EN',
-      runtime: extra?.runtime || raw.runtime || 95,
+      runtime,
       voteAverage: Math.round((raw.vote_average ?? 7.0) * 10) / 10,
       posterPath,
       posterUrl: posterPath ? `${TMDB_IMAGE_BASE}${posterPath}` : undefined,
       director: extra?.director,
-      pitch: w.pitch,
-      catchWarning: w.catchWarning,
+      pitch: createPitch(raw),
+      catchWarning: createCatchWarning(raw, runtime),
       imdbId: extra?.imdbId,
+      similarity: Math.round(similarity * 100) / 100,
+      explanation,
+      topThemes,
     };
   });
 
   return {
     matches: hydratedMatches,
-    candidateCount: candidates.length,
-    fallbackReason: rerankResult.fallbackReason,
+    candidateCount: candidateResult.candidateCount,
   };
 }

@@ -1,5 +1,8 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
-import type { Preset, SeedMovie, HorrorMatch, SeenItem, RecentSeedItem, WatchlistItem, User } from '../lib/types';
+import type { Preset, SeedMovie, HorrorMatch, SeenItem, RecentSeedItem, WatchlistItem, User, TMDBRawMovie } from '../lib/types';
+import { isEmbeddingWorkerSupported, rankMoviesWithWorker, scheduleIdleWarmup } from '../lib/embeddingClient';
+import { createPitch, createCatchWarning } from '../lib/matchFormatters';
+import { TMDB_IMAGE_BASE } from '../lib/tmdb';
 import LeftColumn from './LeftColumn';
 import SeedFilmSection from './SeedFilmSection';
 import SentenceCanvas, { type SentenceCanvasHandle } from './SentenceCanvas';
@@ -89,8 +92,10 @@ export default function KuroApp() {
   const sentenceCanvasRef = useRef<SentenceCanvasHandle>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
 
-  // --- Check Auth Status on Mount ---
+  // --- Check Auth Status on Mount & Schedule Web Worker Pre-Warming ---
   useEffect(() => {
+    scheduleIdleWarmup();
+
     // Purge legacy client-side localStorage keys so stale device data never leaks across users
     try {
       localStorage.removeItem('kuro_seen_list');
@@ -298,7 +303,142 @@ export default function KuroApp() {
     setIsDiscovering(true);
     setDiscoveryResults(null);
 
+    const blacklistIds = seenList.map((s) => s.id);
+    const blacklistTitles = seenList.map((s) => s.title);
+
     try {
+      // 1. Check if dedicated Web Worker is supported in this browser
+      if (isEmbeddingWorkerSupported()) {
+        try {
+          // Fetch candidate pool from TMDB waterfall via API
+          const candidatesRes = await fetch('/api/discover', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              movieId: selectedSeed.id,
+              sentence: sentence.trim(),
+              preset,
+              blacklist: blacklistIds,
+              blacklistTitles,
+              mode: 'candidates',
+            }),
+          });
+
+          if (candidatesRes.ok) {
+            const data = await candidatesRes.json();
+            const rawCandidates = (data.candidates || []) as TMDBRawMovie[];
+
+            // Enforce hard deterministic filters before offloading to worker:
+            // rating >= 4.8, votes >= 35, seen-list blacklist, not seed film
+            const blacklistSet = new Set<number>([selectedSeed.id, ...blacklistIds]);
+            const blacklistTitleSet = new Set<string>(
+              [normalizeTitle(selectedSeed.title), ...blacklistTitles.map(normalizeTitle)].filter(Boolean)
+            );
+
+            const filteredCandidates = rawCandidates.filter((c) => {
+              if (blacklistSet.has(c.id)) return false;
+              const norm = normalizeTitle(c.title);
+              if (norm && blacklistTitleSet.has(norm)) return false;
+              if (c.original_title) {
+                const origNorm = normalizeTitle(c.original_title);
+                if (origNorm && blacklistTitleSet.has(origNorm)) return false;
+              }
+              const rating = c.vote_average ?? 0;
+              if (rating < 4.8) return false;
+              const count = c.vote_count ?? 0;
+              if (count < 35) return false;
+              return true;
+            });
+
+            if (filteredCandidates.length === 0) {
+              setDiscoveryResults({
+                matches: [],
+                candidateCount: data.candidateCount || 0,
+                fallbackReason: data.fallbackReason || 'No horror candidates matched the filter constraints.',
+              });
+              return;
+            }
+
+            // Offload vector lookup, delta inference, and ranking to the dedicated Web Worker!
+            const queryText = sentence.trim() || `${selectedSeed.title}. ${selectedSeed.overview || ''}`;
+            const rankResult = await rankMoviesWithWorker(queryText, filteredCandidates);
+
+            // Filter outliers below threshold (0.22)
+            const MIN_THRESHOLD = 0.22;
+            const passingIds = rankResult.rankedIds.filter(
+              (id) => (rankResult.scores[id] ?? 0) >= MIN_THRESHOLD
+            );
+            const winningIds = (passingIds.length > 0 ? passingIds : rankResult.rankedIds).slice(0, 3);
+
+            // Hydrate winning matches (runtime, director, external IDs)
+            let hydrationMap: Record<number, any> = {};
+            try {
+              const hydrateRes = await fetch('/api/discover', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  movieId: selectedSeed.id,
+                  sentence: sentence.trim(),
+                  preset,
+                  mode: 'hydrate',
+                  winningIds,
+                  candidateCount: data.candidateCount || filteredCandidates.length,
+                }),
+              });
+              if (hydrateRes.ok) {
+                const hydrateData = await hydrateRes.json();
+                hydrationMap = hydrateData.hydration || {};
+              }
+            } catch {
+              // Graceful hydration fallback
+            }
+
+            const candidateMap = new Map(filteredCandidates.map((c) => [c.id, c]));
+            const matches: HorrorMatch[] = winningIds.map((id) => {
+              const raw = candidateMap.get(id)!;
+              const extra = hydrationMap[id];
+              const year = raw.release_date ? parseInt(raw.release_date.split('-')[0], 10) : 0;
+              const posterPath =
+                extra?.posterPath !== undefined && extra?.posterPath !== null
+                  ? extra.posterPath
+                  : raw.poster_path ?? null;
+              const runtime = extra?.runtime || raw.runtime || 95;
+
+              return {
+                id: raw.id,
+                title: raw.title,
+                year,
+                originalLanguage: raw.original_language?.toUpperCase() || 'EN',
+                runtime,
+                voteAverage: Math.round((raw.vote_average ?? 7.0) * 10) / 10,
+                posterPath,
+                posterUrl: posterPath ? `${TMDB_IMAGE_BASE}${posterPath}` : undefined,
+                director: extra?.director,
+                pitch: createPitch(raw),
+                catchWarning: createCatchWarning(raw, runtime),
+                imdbId: extra?.imdbId,
+                similarity: rankResult.scores[id] ?? 0.5,
+                explanation: rankResult.explanations?.[id],
+                topThemes: rankResult.topThemes?.[id],
+              };
+            });
+
+            setDiscoveryResults({
+              matches,
+              candidateCount: data.candidateCount || filteredCandidates.length,
+            });
+
+            setTimeout(() => {
+              resultsRef.current?.scrollIntoView({ behavior: 'smooth' });
+            }, 100);
+            return;
+          }
+        } catch (workerErr) {
+          console.warn('[KuroApp] Web Worker ranking failed, falling back to server pipeline:', workerErr);
+        }
+      }
+
+      // Server Fallback Pipeline (if Web Worker is not supported or failed)
       const res = await fetch('/api/discover', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -306,8 +446,9 @@ export default function KuroApp() {
           movieId: selectedSeed.id,
           sentence: sentence.trim(),
           preset,
-          blacklist: seenList.map((s) => s.id),
-          blacklistTitles: seenList.map((s) => s.title),
+          blacklist: blacklistIds,
+          blacklistTitles,
+          mode: 'full',
         }),
       });
 
@@ -361,6 +502,8 @@ export default function KuroApp() {
       pitch: movie.pitch,
       catchWarning: movie.catchWarning,
       director: movie.director,
+      similarity: movie.similarity,
+      explanation: movie.explanation,
       addedAt: Date.now(),
     };
 

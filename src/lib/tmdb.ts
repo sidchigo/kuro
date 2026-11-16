@@ -173,10 +173,10 @@ export function getPresetQueryParams(
   }
 
   if (preset === 'cult') {
-    params['vote_count.gte'] = '30';
+    params['vote_count.gte'] = '35';
     params['vote_count.lte'] = '1500';
   } else {
-    params['vote_count.gte'] = '30';
+    params['vote_count.gte'] = '35';
   }
 
   // Prevent unreleased/future titles
@@ -261,7 +261,7 @@ export async function queryRecommendationsAndSimilar(
       const isHorror = genres.includes(27);
       const passesRating = (m.vote_average ?? 0) >= 4.8;
       const count = m.vote_count ?? 0;
-      const passesCount = preset === 'cult' ? count >= 30 && count <= 1500 : count >= 30;
+      const passesCount = preset === 'cult' ? count >= 35 && count <= 1500 : count >= 35;
 
       const lang = (m.original_language || '').toLowerCase();
       let passesLanguage = true;
@@ -286,7 +286,8 @@ export async function queryRecommendationsAndSimilar(
 export async function queryDiscoverMovies(
   preset: Preset,
   targetLanguageCodes?: string[],
-  customKey?: string
+  customKey?: string,
+  page: number = 1
 ): Promise<TMDBRawMovie[]> {
   const apiKey = getTmdbApiKey(customKey);
   if (!apiKey) return [];
@@ -298,6 +299,7 @@ export async function queryDiscoverMovies(
     url.searchParams.set('with_genres', '27');
     url.searchParams.set('sort_by', 'popularity.desc');
     url.searchParams.set('include_adult', 'false');
+    url.searchParams.set('page', String(page));
 
     for (const [key, value] of Object.entries(presetParams)) {
       url.searchParams.set(key, value);

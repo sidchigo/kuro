@@ -83,6 +83,9 @@ export interface HorrorMatch {
   pitch: string;
   catchWarning: string;
   imdbId?: string;
+  similarity?: number;
+  explanation?: string;
+  topThemes?: string[];
 }
 
 export interface DiscoverResponse {
@@ -122,6 +125,8 @@ export interface WatchlistItem {
   pitch?: string;
   catchWarning?: string;
   director?: string;
+  similarity?: number;
+  explanation?: string;
   addedAt: number;
 }
 

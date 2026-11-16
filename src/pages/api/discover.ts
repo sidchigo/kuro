@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { z } from 'zod';
-import { processDiscovery } from '../../lib/discoveryService';
+import { processDiscovery, getDiscoveryCandidates } from '../../lib/discoveryService';
+import { hydrateWinningMovies } from '../../lib/tmdb';
 import { authenticateRequest } from '../../lib/auth';
 import { db } from '../../lib/db';
 import { discoveryLogs } from '../../lib/schema';
@@ -8,12 +9,15 @@ import { discoveryLogs } from '../../lib/schema';
 export const prerender = false;
 
 const DiscoverBodySchema = z.object({
-  movieId: z.number({ required_error: 'movieId is required' }),
+  movieId: z.number().optional(),
   sentence: z.string().default(''),
   preset: z.enum(['all', 'cult', 'foreign']).default('all'),
   blacklist: z.array(z.number()).default([]),
   blacklistTitles: z.array(z.string()).default([]),
   targetLanguageCodes: z.array(z.string()).optional(),
+  mode: z.enum(['full', 'candidates', 'hydrate']).default('full').optional(),
+  winningIds: z.array(z.number()).optional(),
+  candidateCount: z.number().optional(),
 });
 
 export const POST: APIRoute = async ({ request }) => {
@@ -52,7 +56,78 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
 
-    const { movieId, sentence, preset, blacklist, blacklistTitles, targetLanguageCodes } = parseResult.data;
+    const {
+      movieId,
+      sentence,
+      preset,
+      blacklist,
+      blacklistTitles,
+      targetLanguageCodes,
+      mode = 'full',
+      winningIds = [],
+      candidateCount: clientCandidateCount,
+    } = parseResult.data;
+
+    // Mode 1: Candidates Only (for offloading inference to Web Worker)
+    if (mode === 'candidates') {
+      if (!movieId) {
+        return new Response(
+          JSON.stringify({ candidates: [], candidateCount: 0, fallbackReason: 'movieId is required' }),
+          { status: 400, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const candidateData = await getDiscoveryCandidates({
+        movieId,
+        sentence,
+        preset,
+        blacklist,
+        blacklistTitles,
+        targetLanguageCodes,
+      });
+
+      return new Response(JSON.stringify(candidateData), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Mode 2: Hydrate Winning Matches
+    if (mode === 'hydrate') {
+      const hydrationMap = await hydrateWinningMovies(winningIds);
+      const hydrationObj = Object.fromEntries(hydrationMap.entries());
+
+      // Record discovery telemetry in SQLite via Drizzle ORM
+      if (movieId) {
+        try {
+          await db.insert(discoveryLogs).values({
+            userId: user ? user.id : null,
+            seedMovieId: movieId,
+            seedTitle: `Seed #${movieId}`,
+            sentence,
+            preset,
+            candidateCount: clientCandidateCount || winningIds.length,
+            resultCount: winningIds.length,
+            createdAt: Date.now(),
+          });
+        } catch (dbErr) {
+          console.warn('[Telemetry] Failed to log discovery query:', dbErr);
+        }
+      }
+
+      return new Response(JSON.stringify({ hydration: hydrationObj }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Mode 3: Full Server Pipeline (Fallback)
+    if (!movieId) {
+      return new Response(
+        JSON.stringify({ matches: [], candidateCount: 0, fallbackReason: 'movieId is required' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
 
     const result = await processDiscovery({
       movieId,
@@ -91,7 +166,8 @@ export const POST: APIRoute = async ({ request }) => {
       JSON.stringify({
         matches: [],
         candidateCount: 0,
-        fallbackReason: error instanceof Error ? error.message : 'Discovery pipeline encountered an unexpected error.',
+        fallbackReason:
+          error instanceof Error ? error.message : 'Discovery pipeline encountered an unexpected error.',
       }),
       {
         status: 200, // Never throw 500 per specification

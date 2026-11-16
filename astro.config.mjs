@@ -16,4 +16,9 @@ export default defineConfig({
       applyBaseStyles: false,
     }),
   ],
+  vite: {
+    worker: {
+      format: 'es',
+    },
+  },
 });
