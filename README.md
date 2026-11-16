@@ -25,8 +25,19 @@
 - **Plan to Watch (Watchlist)**: Save recommendations to watchlist, dynamically sorted by taste affinity against rated seen films.
 - **Recent Seeds**: Persists last 5 searched seeds along with their active sentence for 1-click restoration.
 - **Already Seen Archive**: Automatically records searched/seeded films with 5-star ratings to blacklist them from future discovery.
-- **Multi-User RBAC**: Self-contained SQLite persistence (`data/kuro.db`) with HttpOnly cookie sessions, 2-tier permissions (`Admin` and `Member`), personal synchronized libraries, and an administrative user & telemetry dashboard.
+- **Multi-User RBAC & Drizzle ORM**: Type-safe persistence layer using **Drizzle ORM** with SQLite (`data/kuro.db`). Includes HttpOnly cookie sessions, 2-tier permissions (`Admin` and `Member`), personal synchronized libraries, an administrative user & telemetry dashboard, and built-in **Drizzle Studio** visual database editor.
   - *Default Admin*: `admin` / `kuroadmin123`
+
+---
+
+## Visual Database Studio (Drizzle Studio)
+
+To inspect, search, and edit database records visually in a dark-mode browser interface (similar to Supabase Table Editor):
+
+```bash
+npm run db:studio
+```
+Opens Drizzle Studio at `https://local.drizzle.studio`.
 
 ---
 

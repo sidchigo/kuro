@@ -1,36 +1,47 @@
 import type { APIRoute } from 'astro';
 import { requireAdmin } from '../../../lib/auth';
-import { getDb } from '../../../lib/db';
+import { db } from '../../../lib/db';
+import { users, discoveryLogs, sessions } from '../../../lib/schema';
+import { desc, count, gt, eq } from 'drizzle-orm';
 import type { AdminStats, DiscoveryLogItem } from '../../../lib/types';
 
 export const prerender = false;
 
 export const GET: APIRoute = async ({ request }) => {
-  const adminCheck = requireAdmin(request);
+  const adminCheck = await requireAdmin(request);
   if ('errorResponse' in adminCheck) return adminCheck.errorResponse;
 
-  const db = getDb();
   const now = Date.now();
 
-  const userCount = db.prepare('SELECT COUNT(*) as count FROM users').get() as { count: number };
-  const discoveryCount = db.prepare('SELECT COUNT(*) as count FROM discovery_logs').get() as { count: number };
-  const sessionCount = db.prepare('SELECT COUNT(*) as count FROM sessions WHERE expires_at > ?').get(now) as { count: number };
+  const userCountRes = await db.select({ value: count() }).from(users);
+  const discoveryCountRes = await db.select({ value: count() }).from(discoveryLogs);
+  const sessionCountRes = await db
+    .select({ value: count() })
+    .from(sessions)
+    .where(gt(sessions.expiresAt, now));
 
-  const recentLogs = db.prepare(`
-    SELECT d.id, d.user_id as userId, u.username, d.seed_movie_id as seedMovieId,
-           d.seed_title as seedTitle, d.sentence, d.preset,
-           d.candidate_count as candidateCount, d.result_count as resultCount,
-           d.created_at as createdAt
-    FROM discovery_logs d
-    LEFT JOIN users u ON u.id = d.user_id
-    ORDER BY d.created_at DESC
-    LIMIT 10
-  `).all() as unknown as DiscoveryLogItem[];
+  const recentLogs = (await db
+    .select({
+      id: discoveryLogs.id,
+      userId: discoveryLogs.userId,
+      username: users.username,
+      seedMovieId: discoveryLogs.seedMovieId,
+      seedTitle: discoveryLogs.seedTitle,
+      sentence: discoveryLogs.sentence,
+      preset: discoveryLogs.preset,
+      candidateCount: discoveryLogs.candidateCount,
+      resultCount: discoveryLogs.resultCount,
+      createdAt: discoveryLogs.createdAt,
+    })
+    .from(discoveryLogs)
+    .leftJoin(users, eq(users.id, discoveryLogs.userId))
+    .orderBy(desc(discoveryLogs.createdAt))
+    .limit(10)) as unknown as DiscoveryLogItem[];
 
   const stats: AdminStats = {
-    totalUsers: userCount.count,
-    totalDiscoveries: discoveryCount.count,
-    activeSessions: sessionCount.count,
+    totalUsers: userCountRes[0]?.value ?? 0,
+    totalDiscoveries: discoveryCountRes[0]?.value ?? 0,
+    activeSessions: sessionCountRes[0]?.value ?? 0,
   };
 
   return new Response(JSON.stringify({ stats, recentLogs }), {

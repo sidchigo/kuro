@@ -1,47 +1,68 @@
 import type { APIRoute } from 'astro';
 import { requireAuth } from '../../../lib/auth';
-import { getDb } from '../../../lib/db';
-import type { WatchlistItem, SeenItem, RecentSeedItem } from '../../../lib/types';
+import { db } from '../../../lib/db';
+import { watchlists, seenMovies, recentSeeds } from '../../../lib/schema';
+import { eq, desc } from 'drizzle-orm';
 
 export const prerender = false;
 
 export const GET: APIRoute = async ({ request }) => {
-  const auth = requireAuth(request);
+  const auth = await requireAuth(request);
   if ('errorResponse' in auth) {
     return auth.errorResponse;
   }
 
   const userId = auth.user.id;
-  const db = getDb();
 
   // Watchlist
-  const watchlistRows = (db.prepare(`
-    SELECT movie_id as id, title, year, original_language as originalLanguage,
-           runtime, poster_url as posterUrl, vote_average as voteAverage,
-           pitch, catch_warning as catchWarning, director, added_at as addedAt
-    FROM watchlists
-    WHERE user_id = ?
-    ORDER BY added_at DESC
-  `).all(userId) as unknown) as WatchlistItem[];
+  const watchlistRows = await db
+    .select({
+      id: watchlists.movieId,
+      title: watchlists.title,
+      year: watchlists.year,
+      originalLanguage: watchlists.originalLanguage,
+      runtime: watchlists.runtime,
+      posterUrl: watchlists.posterUrl,
+      voteAverage: watchlists.voteAverage,
+      pitch: watchlists.pitch,
+      catchWarning: watchlists.catchWarning,
+      director: watchlists.director,
+      addedAt: watchlists.addedAt,
+    })
+    .from(watchlists)
+    .where(eq(watchlists.userId, userId))
+    .orderBy(desc(watchlists.addedAt));
 
   // Seen list
-  const seenRows = (db.prepare(`
-    SELECT movie_id as id, title, year, rating, director,
-           original_language as originalLanguage, poster_url as posterUrl
-    FROM seen_movies
-    WHERE user_id = ?
-    ORDER BY added_at DESC
-  `).all(userId) as unknown) as SeenItem[];
+  const seenRows = await db
+    .select({
+      id: seenMovies.movieId,
+      title: seenMovies.title,
+      year: seenMovies.year,
+      rating: seenMovies.rating,
+      director: seenMovies.director,
+      originalLanguage: seenMovies.originalLanguage,
+      posterUrl: seenMovies.posterUrl,
+    })
+    .from(seenMovies)
+    .where(eq(seenMovies.userId, userId))
+    .orderBy(desc(seenMovies.addedAt));
 
   // Recent seeds
-  const recentRows = (db.prepare(`
-    SELECT movie_id as id, title, year, original_language as originalLanguage,
-           poster_url as posterUrl, director, sentence
-    FROM recent_seeds
-    WHERE user_id = ?
-    ORDER BY used_at DESC
-    LIMIT 5
-  `).all(userId) as unknown) as RecentSeedItem[];
+  const recentRows = await db
+    .select({
+      id: recentSeeds.movieId,
+      title: recentSeeds.title,
+      year: recentSeeds.year,
+      originalLanguage: recentSeeds.originalLanguage,
+      posterUrl: recentSeeds.posterUrl,
+      director: recentSeeds.director,
+      sentence: recentSeeds.sentence,
+    })
+    .from(recentSeeds)
+    .where(eq(recentSeeds.userId, userId))
+    .orderBy(desc(recentSeeds.usedAt))
+    .limit(5);
 
   return new Response(
     JSON.stringify({
@@ -59,89 +80,79 @@ export const GET: APIRoute = async ({ request }) => {
   );
 };
 
-/**
- * Bulk sync local items into user account (e.g. upon login)
- */
 export const POST: APIRoute = async ({ request }) => {
-  const auth = requireAuth(request);
+  const auth = await requireAuth(request);
   if ('errorResponse' in auth) {
     return auth.errorResponse;
   }
 
   const userId = auth.user.id;
-  const db = getDb();
 
   try {
     const body = await request.json();
-    const { watchlist = [], seenList = [], recentSeeds = [] } = body;
+    const { watchlist = [], seenList = [], recentSeeds: recents = [] } = body;
 
-    // Insert watchlist items
-    const insertWatchlist = db.prepare(`
-      INSERT OR IGNORE INTO watchlists (user_id, movie_id, title, year, original_language, runtime, poster_url, vote_average, pitch, catch_warning, director, added_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
     for (const item of watchlist) {
-      insertWatchlist.run(
-        userId,
-        item.id,
-        item.title,
-        item.year ?? null,
-        item.originalLanguage ?? null,
-        item.runtime ?? null,
-        item.posterUrl ?? null,
-        item.voteAverage ?? null,
-        item.pitch ?? null,
-        item.catchWarning ?? null,
-        item.director ?? null,
-        item.addedAt || Date.now()
-      );
+      await db
+        .insert(watchlists)
+        .values({
+          userId,
+          movieId: item.id,
+          title: item.title,
+          year: item.year ?? null,
+          originalLanguage: item.originalLanguage ?? null,
+          runtime: item.runtime ?? null,
+          posterUrl: item.posterUrl ?? null,
+          voteAverage: item.voteAverage ?? null,
+          pitch: item.pitch ?? null,
+          catchWarning: item.catchWarning ?? null,
+          director: item.director ?? null,
+          addedAt: item.addedAt || Date.now(),
+        })
+        .onConflictDoNothing();
     }
 
-    // Insert seen items
-    const insertSeen = db.prepare(`
-      INSERT OR IGNORE INTO seen_movies (user_id, movie_id, title, year, rating, director, original_language, poster_url, added_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
     for (const item of seenList) {
-      insertSeen.run(
-        userId,
-        item.id,
-        item.title,
-        item.year ?? null,
-        item.rating ?? null,
-        item.director ?? null,
-        item.originalLanguage ?? null,
-        item.posterUrl ?? null,
-        Date.now()
-      );
+      await db
+        .insert(seenMovies)
+        .values({
+          userId,
+          movieId: item.id,
+          title: item.title,
+          year: item.year ?? null,
+          rating: item.rating ?? null,
+          director: item.director ?? null,
+          originalLanguage: item.originalLanguage ?? null,
+          posterUrl: item.posterUrl ?? null,
+          addedAt: Date.now(),
+        })
+        .onConflictDoNothing();
     }
 
-    // Insert recent seeds
-    const insertRecent = db.prepare(`
-      INSERT OR REPLACE INTO recent_seeds (user_id, movie_id, title, year, original_language, poster_url, director, sentence, used_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-    for (const item of recentSeeds) {
-      insertRecent.run(
-        userId,
-        item.id,
-        item.title,
-        item.year ?? null,
-        item.originalLanguage ?? null,
-        item.posterUrl ?? null,
-        item.director ?? null,
-        item.sentence ?? null,
-        Date.now()
-      );
+    for (const item of recents) {
+      await db
+        .insert(recentSeeds)
+        .values({
+          userId,
+          movieId: item.id,
+          title: item.title,
+          year: item.year ?? null,
+          originalLanguage: item.originalLanguage ?? null,
+          posterUrl: item.posterUrl ?? null,
+          director: item.director ?? null,
+          sentence: item.sentence ?? null,
+          usedAt: Date.now(),
+        })
+        .onConflictDoNothing();
     }
 
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });
-  } catch (err) {
-    console.error('[API /api/user/library POST] Error:', err);
-    return new Response(JSON.stringify({ error: 'Sync failed' }), {
+  } catch (error) {
+    console.error('[API /api/user/library] Error:', error);
+    return new Response(JSON.stringify({ error: 'Failed to sync library' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
     });

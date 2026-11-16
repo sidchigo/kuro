@@ -4,7 +4,7 @@ import { authenticateRequest } from '../../../lib/auth';
 export const prerender = false;
 
 export const GET: APIRoute = async ({ request }) => {
-  const user = authenticateRequest(request);
+  const user = await authenticateRequest(request);
   return new Response(JSON.stringify({ user }), {
     status: 200,
     headers: {

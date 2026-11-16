@@ -1,13 +1,15 @@
 import type { APIRoute } from 'astro';
 import { requireAuth } from '../../../lib/auth';
-import { getDb } from '../../../lib/db';
+import { db } from '../../../lib/db';
+import { seenMovies, watchlists } from '../../../lib/schema';
+import { eq, and } from 'drizzle-orm';
 import type { SeenItem } from '../../../lib/types';
 
 export const prerender = false;
 
 // Add to seen (and remove from watchlist)
 export const POST: APIRoute = async ({ request }) => {
-  const auth = requireAuth(request);
+  const auth = await requireAuth(request);
   if ('errorResponse' in auth) return auth.errorResponse;
 
   try {
@@ -19,28 +21,39 @@ export const POST: APIRoute = async ({ request }) => {
       });
     }
 
-    const db = getDb();
     const userId = auth.user.id;
 
-    // Insert into seen_movies
-    db.prepare(`
-      INSERT OR REPLACE INTO seen_movies (
-        user_id, movie_id, title, year, rating, director, original_language, poster_url, added_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(
-      userId,
-      item.id,
-      item.title,
-      item.year ?? null,
-      item.rating ?? null,
-      item.director ?? null,
-      item.originalLanguage ?? null,
-      item.posterUrl ?? null,
-      Date.now()
-    );
+    // Insert into seen_movies (or update if already exists)
+    await db
+      .insert(seenMovies)
+      .values({
+        userId,
+        movieId: item.id,
+        title: item.title,
+        year: item.year ?? null,
+        rating: item.rating ?? null,
+        director: item.director ?? null,
+        originalLanguage: item.originalLanguage ?? null,
+        posterUrl: item.posterUrl ?? null,
+        addedAt: Date.now(),
+      })
+      .onConflictDoUpdate({
+        target: [seenMovies.userId, seenMovies.movieId],
+        set: {
+          title: item.title,
+          year: item.year ?? null,
+          rating: item.rating ?? null,
+          director: item.director ?? null,
+          originalLanguage: item.originalLanguage ?? null,
+          posterUrl: item.posterUrl ?? null,
+          addedAt: Date.now(),
+        },
+      });
 
     // If it was in watchlist, remove it
-    db.prepare('DELETE FROM watchlists WHERE user_id = ? AND movie_id = ?').run(userId, item.id);
+    await db
+      .delete(watchlists)
+      .where(and(eq(watchlists.userId, userId), eq(watchlists.movieId, item.id)));
 
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
@@ -57,7 +70,7 @@ export const POST: APIRoute = async ({ request }) => {
 
 // Update 1-5 star rating
 export const PATCH: APIRoute = async ({ request }) => {
-  const auth = requireAuth(request);
+  const auth = await requireAuth(request);
   if ('errorResponse' in auth) return auth.errorResponse;
 
   try {
@@ -72,12 +85,10 @@ export const PATCH: APIRoute = async ({ request }) => {
       });
     }
 
-    const db = getDb();
-    db.prepare(`
-      UPDATE seen_movies
-      SET rating = ?
-      WHERE user_id = ? AND movie_id = ?
-    `).run(rating, auth.user.id, movieId);
+    await db
+      .update(seenMovies)
+      .set({ rating })
+      .where(and(eq(seenMovies.userId, auth.user.id), eq(seenMovies.movieId, movieId)));
 
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
@@ -94,7 +105,7 @@ export const PATCH: APIRoute = async ({ request }) => {
 
 // Undo / delete from seen
 export const DELETE: APIRoute = async ({ request }) => {
-  const auth = requireAuth(request);
+  const auth = await requireAuth(request);
   if ('errorResponse' in auth) return auth.errorResponse;
 
   const url = new URL(request.url);
@@ -106,8 +117,9 @@ export const DELETE: APIRoute = async ({ request }) => {
     });
   }
 
-  const db = getDb();
-  db.prepare('DELETE FROM seen_movies WHERE user_id = ? AND movie_id = ?').run(auth.user.id, movieId);
+  await db
+    .delete(seenMovies)
+    .where(and(eq(seenMovies.userId, auth.user.id), eq(seenMovies.movieId, movieId)));
 
   return new Response(JSON.stringify({ success: true }), {
     status: 200,

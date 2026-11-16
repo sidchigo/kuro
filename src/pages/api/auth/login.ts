@@ -1,6 +1,8 @@
 import type { APIRoute } from 'astro';
 import { z } from 'zod';
-import { getDb } from '../../../lib/db';
+import { db } from '../../../lib/db';
+import { users } from '../../../lib/schema';
+import { eq } from 'drizzle-orm';
 import { verifyPassword, createSession, createSessionCookieHeader } from '../../../lib/auth';
 import type { User, Role } from '../../../lib/types';
 
@@ -32,20 +34,21 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     const { username, password } = parseResult.data;
-    const db = getDb();
 
-    const row = db.prepare(`
-      SELECT id, username, password_hash, salt, role, created_at
-      FROM users
-      WHERE username = ?
-    `).get(username) as {
-      id: number;
-      username: string;
-      password_hash: string;
-      salt: string;
-      role: Role;
-      created_at: number;
-    } | undefined;
+    const rows = await db
+      .select({
+        id: users.id,
+        username: users.username,
+        passwordHash: users.passwordHash,
+        salt: users.salt,
+        role: users.role,
+        createdAt: users.createdAt,
+      })
+      .from(users)
+      .where(eq(users.username, username))
+      .limit(1);
+
+    const row = rows[0];
 
     if (!row) {
       return new Response(JSON.stringify({ error: 'Invalid username or password' }), {
@@ -54,7 +57,7 @@ export const POST: APIRoute = async ({ request }) => {
       });
     }
 
-    const isValid = verifyPassword(password, row.password_hash, row.salt);
+    const isValid = verifyPassword(password, row.passwordHash, row.salt);
     if (!isValid) {
       return new Response(JSON.stringify({ error: 'Invalid username or password' }), {
         status: 401,
@@ -62,13 +65,13 @@ export const POST: APIRoute = async ({ request }) => {
       });
     }
 
-    const { token, expiresAt } = createSession(row.id);
+    const { token, expiresAt } = await createSession(row.id);
 
     const user: User = {
       id: row.id,
       username: row.username,
-      role: row.role,
-      createdAt: row.created_at,
+      role: row.role as Role,
+      createdAt: row.createdAt,
     };
 
     return new Response(JSON.stringify({ user }), {

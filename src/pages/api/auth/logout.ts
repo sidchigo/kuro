@@ -6,7 +6,7 @@ export const prerender = false;
 export const POST: APIRoute = async ({ request }) => {
   const token = getCookieToken(request);
   if (token) {
-    deleteSession(token);
+    await deleteSession(token);
   }
 
   return new Response(JSON.stringify({ success: true }), {

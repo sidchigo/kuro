@@ -2,7 +2,8 @@ import type { APIRoute } from 'astro';
 import { z } from 'zod';
 import { processDiscovery } from '../../lib/discoveryService';
 import { authenticateRequest } from '../../lib/auth';
-import { getDb } from '../../lib/db';
+import { db } from '../../lib/db';
+import { discoveryLogs } from '../../lib/schema';
 
 export const prerender = false;
 
@@ -17,7 +18,7 @@ const DiscoverBodySchema = z.object({
 
 export const POST: APIRoute = async ({ request }) => {
   try {
-    const user = authenticateRequest(request);
+    const user = await authenticateRequest(request);
 
     let rawBody: unknown;
     try {
@@ -62,23 +63,18 @@ export const POST: APIRoute = async ({ request }) => {
       targetLanguageCodes,
     });
 
-    // Record discovery telemetry in SQLite
+    // Record discovery telemetry in SQLite via Drizzle ORM
     try {
-      const db = getDb();
-      db.prepare(`
-        INSERT INTO discovery_logs (
-          user_id, seed_movie_id, seed_title, sentence, preset, candidate_count, result_count, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-      `).run(
-        user ? user.id : null,
-        movieId,
-        result.matches[0]?.title || `Seed #${movieId}`,
+      await db.insert(discoveryLogs).values({
+        userId: user ? user.id : null,
+        seedMovieId: movieId,
+        seedTitle: result.matches[0]?.title || `Seed #${movieId}`,
         sentence,
         preset,
-        result.candidateCount,
-        result.matches.length,
-        Date.now()
-      );
+        candidateCount: result.candidateCount,
+        resultCount: result.matches.length,
+        createdAt: Date.now(),
+      });
     } catch (dbErr) {
       console.warn('[Telemetry] Failed to log discovery query:', dbErr);
     }

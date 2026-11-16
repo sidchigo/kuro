@@ -1,12 +1,13 @@
 import type { APIRoute } from 'astro';
 import { requireAuth } from '../../../lib/auth';
-import { getDb } from '../../../lib/db';
+import { db } from '../../../lib/db';
+import { recentSeeds } from '../../../lib/schema';
 import type { RecentSeedItem } from '../../../lib/types';
 
 export const prerender = false;
 
 export const POST: APIRoute = async ({ request }) => {
-  const auth = requireAuth(request);
+  const auth = await requireAuth(request);
   if ('errorResponse' in auth) return auth.errorResponse;
 
   try {
@@ -18,22 +19,31 @@ export const POST: APIRoute = async ({ request }) => {
       });
     }
 
-    const db = getDb();
-    db.prepare(`
-      INSERT OR REPLACE INTO recent_seeds (
-        user_id, movie_id, title, year, original_language, poster_url, director, sentence, used_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(
-      auth.user.id,
-      item.id,
-      item.title,
-      item.year ?? null,
-      item.originalLanguage ?? null,
-      item.posterUrl ?? null,
-      item.director ?? null,
-      item.sentence ?? null,
-      Date.now()
-    );
+    await db
+      .insert(recentSeeds)
+      .values({
+        userId: auth.user.id,
+        movieId: item.id,
+        title: item.title,
+        year: item.year ?? null,
+        originalLanguage: item.originalLanguage ?? null,
+        posterUrl: item.posterUrl ?? null,
+        director: item.director ?? null,
+        sentence: item.sentence ?? null,
+        usedAt: Date.now(),
+      })
+      .onConflictDoUpdate({
+        target: [recentSeeds.userId, recentSeeds.movieId],
+        set: {
+          title: item.title,
+          year: item.year ?? null,
+          originalLanguage: item.originalLanguage ?? null,
+          posterUrl: item.posterUrl ?? null,
+          director: item.director ?? null,
+          sentence: item.sentence ?? null,
+          usedAt: Date.now(),
+        },
+      });
 
     return new Response(JSON.stringify({ success: true }), {
       status: 200,

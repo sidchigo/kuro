@@ -1,6 +1,8 @@
 import type { APIRoute } from 'astro';
 import { z } from 'zod';
-import { getDb } from '../../../lib/db';
+import { db } from '../../../lib/db';
+import { users } from '../../../lib/schema';
+import { eq } from 'drizzle-orm';
 import { hashPassword, createSession, createSessionCookieHeader } from '../../../lib/auth';
 import type { User } from '../../../lib/types';
 
@@ -36,11 +38,15 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     const { username, password } = parseResult.data;
-    const db = getDb();
 
     // Check if user already exists
-    const existing = db.prepare('SELECT id FROM users WHERE username = ?').get(username);
-    if (existing) {
+    const existing = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.username, username))
+      .limit(1);
+
+    if (existing.length > 0) {
       return new Response(JSON.stringify({ error: 'Username is already taken' }), {
         status: 409,
         headers: { 'Content-Type': 'application/json' },
@@ -51,13 +57,19 @@ export const POST: APIRoute = async ({ request }) => {
     const { hash, salt } = hashPassword(password);
     const now = Date.now();
 
-    const insertResult = db.prepare(`
-      INSERT INTO users (username, password_hash, salt, role, created_at)
-      VALUES (?, ?, ?, 'member', ?)
-    `).run(username, hash, salt, now);
+    const [inserted] = await db
+      .insert(users)
+      .values({
+        username,
+        passwordHash: hash,
+        salt,
+        role: 'member',
+        createdAt: now,
+      })
+      .returning({ id: users.id });
 
-    const userId = Number(insertResult.lastInsertRowid);
-    const { token, expiresAt } = createSession(userId);
+    const userId = inserted.id;
+    const { token, expiresAt } = await createSession(userId);
 
     const user: User = {
       id: userId,

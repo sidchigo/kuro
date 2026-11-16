@@ -1,5 +1,7 @@
 import crypto from 'node:crypto';
-import { getDb } from './db';
+import { db } from './db';
+import { users, sessions } from './schema';
+import { eq, and, gt } from 'drizzle-orm';
 import type { User, Role } from './types';
 
 const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
@@ -21,52 +23,52 @@ export function verifyPassword(password: string, hash: string, salt: string): bo
   }
 }
 
-export function createSession(userId: number): { token: string; expiresAt: number } {
-  const db = getDb();
+export async function createSession(userId: number): Promise<{ token: string; expiresAt: number }> {
   const token = crypto.randomBytes(32).toString('hex');
   const now = Date.now();
   const expiresAt = now + SESSION_TTL_MS;
 
-  db.prepare(`
-    INSERT INTO sessions (token, user_id, expires_at, created_at)
-    VALUES (?, ?, ?, ?)
-  `).run(token, userId, expiresAt, now);
+  await db.insert(sessions).values({
+    token,
+    userId,
+    expiresAt,
+    createdAt: now,
+  });
 
   return { token, expiresAt };
 }
 
-export function deleteSession(token: string): void {
-  const db = getDb();
-  db.prepare('DELETE FROM sessions WHERE token = ?').run(token);
+export async function deleteSession(token: string): Promise<void> {
+  await db.delete(sessions).where(eq(sessions.token, token));
 }
 
-export function validateSession(token: string): User | null {
+export async function validateSession(token: string): Promise<User | null> {
   if (!token) return null;
-  const db = getDb();
   const now = Date.now();
 
-  const row = db.prepare(`
-    SELECT u.id, u.username, u.role, u.created_at, s.expires_at
-    FROM sessions s
-    JOIN users u ON u.id = s.user_id
-    WHERE s.token = ? AND s.expires_at > ?
-  `).get(token, now) as {
-    id: number;
-    username: string;
-    role: Role;
-    created_at: number;
-    expires_at: number;
-  } | undefined;
+  const rows = await db
+    .select({
+      id: users.id,
+      username: users.username,
+      role: users.role,
+      createdAt: users.createdAt,
+      expiresAt: sessions.expiresAt,
+    })
+    .from(sessions)
+    .innerJoin(users, eq(users.id, sessions.userId))
+    .where(and(eq(sessions.token, token), gt(sessions.expiresAt, now)))
+    .limit(1);
 
-  if (!row) {
+  if (rows.length === 0) {
     return null;
   }
 
+  const row = rows[0];
   return {
     id: row.id,
     username: row.username,
-    role: row.role,
-    createdAt: row.created_at,
+    role: row.role as Role,
+    createdAt: row.createdAt,
   };
 }
 
@@ -98,7 +100,7 @@ export function createClearCookieHeader(): string {
 /**
  * Authenticates request via session cookie or Authorization Bearer header
  */
-export function authenticateRequest(request: Request): User | null {
+export async function authenticateRequest(request: Request): Promise<User | null> {
   let token = getCookieToken(request);
   if (!token) {
     const authHeader = request.headers.get('authorization');
@@ -108,14 +110,14 @@ export function authenticateRequest(request: Request): User | null {
   }
 
   if (!token) return null;
-  return validateSession(token);
+  return await validateSession(token);
 }
 
 /**
  * RBAC Guard: Ensures user is logged in
  */
-export function requireAuth(request: Request): { user: User } | { errorResponse: Response } {
-  const user = authenticateRequest(request);
+export async function requireAuth(request: Request): Promise<{ user: User } | { errorResponse: Response }> {
+  const user = await authenticateRequest(request);
   if (!user) {
     return {
       errorResponse: new Response(
@@ -130,8 +132,8 @@ export function requireAuth(request: Request): { user: User } | { errorResponse:
 /**
  * RBAC Guard: Ensures user has Admin role
  */
-export function requireAdmin(request: Request): { user: User } | { errorResponse: Response } {
-  const authResult = requireAuth(request);
+export async function requireAdmin(request: Request): Promise<{ user: User } | { errorResponse: Response }> {
+  const authResult = await requireAuth(request);
   if ('errorResponse' in authResult) {
     return authResult;
   }

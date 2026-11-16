@@ -1,24 +1,29 @@
 import type { APIRoute } from 'astro';
 import { requireAdmin } from '../../../lib/auth';
-import { getDb } from '../../../lib/db';
-import type { AdminUserView, Role } from '../../../lib/types';
+import { db } from '../../../lib/db';
+import { users } from '../../../lib/schema';
+import { eq, sql, desc, count } from 'drizzle-orm';
+import type { Role } from '../../../lib/types';
 
 export const prerender = false;
 
 // GET /api/admin/users: List all users with library & activity metrics
 export const GET: APIRoute = async ({ request }) => {
-  const adminCheck = requireAdmin(request);
+  const adminCheck = await requireAdmin(request);
   if ('errorResponse' in adminCheck) return adminCheck.errorResponse;
 
-  const db = getDb();
-  const rows = db.prepare(`
-    SELECT u.id, u.username, u.role, u.created_at as createdAt,
-           (SELECT COUNT(*) FROM watchlists w WHERE w.user_id = u.id) as watchlistCount,
-           (SELECT COUNT(*) FROM seen_movies s WHERE s.user_id = u.id) as seenCount,
-           (SELECT COUNT(*) FROM discovery_logs d WHERE d.user_id = u.id) as discoveryCount
-    FROM users u
-    ORDER BY u.created_at DESC
-  `).all() as unknown as AdminUserView[];
+  const rows = await db
+    .select({
+      id: users.id,
+      username: users.username,
+      role: users.role,
+      createdAt: users.createdAt,
+      watchlistCount: sql<number>`(SELECT COUNT(*) FROM watchlists w WHERE w.user_id = ${users.id})`,
+      seenCount: sql<number>`(SELECT COUNT(*) FROM seen_movies s WHERE s.user_id = ${users.id})`,
+      discoveryCount: sql<number>`(SELECT COUNT(*) FROM discovery_logs d WHERE d.user_id = ${users.id})`,
+    })
+    .from(users)
+    .orderBy(desc(users.createdAt));
 
   return new Response(JSON.stringify({ users: rows }), {
     status: 200,
@@ -28,7 +33,7 @@ export const GET: APIRoute = async ({ request }) => {
 
 // PATCH /api/admin/users: Change user role (admin <-> member)
 export const PATCH: APIRoute = async ({ request }) => {
-  const adminCheck = requireAdmin(request);
+  const adminCheck = await requireAdmin(request);
   if ('errorResponse' in adminCheck) return adminCheck.errorResponse;
 
   try {
@@ -43,12 +48,14 @@ export const PATCH: APIRoute = async ({ request }) => {
       });
     }
 
-    const db = getDb();
-
     // Prevent demoting self if sole admin
     if (userId === adminCheck.user.id && newRole !== 'admin') {
-      const adminCount = db.prepare("SELECT COUNT(*) as count FROM users WHERE role = 'admin'").get() as { count: number };
-      if (adminCount.count <= 1) {
+      const adminCountRes = await db
+        .select({ value: count() })
+        .from(users)
+        .where(eq(users.role, 'admin'));
+
+      if ((adminCountRes[0]?.value ?? 0) <= 1) {
         return new Response(JSON.stringify({ error: 'Cannot demote the sole administrator.' }), {
           status: 400,
           headers: { 'Content-Type': 'application/json' },
@@ -56,7 +63,7 @@ export const PATCH: APIRoute = async ({ request }) => {
       }
     }
 
-    db.prepare('UPDATE users SET role = ? WHERE id = ?').run(newRole, userId);
+    await db.update(users).set({ role: newRole }).where(eq(users.id, userId));
 
     return new Response(JSON.stringify({ success: true, userId, role: newRole }), {
       status: 200,
@@ -73,7 +80,7 @@ export const PATCH: APIRoute = async ({ request }) => {
 
 // DELETE /api/admin/users?id={userId}: Delete user
 export const DELETE: APIRoute = async ({ request }) => {
-  const adminCheck = requireAdmin(request);
+  const adminCheck = await requireAdmin(request);
   if ('errorResponse' in adminCheck) return adminCheck.errorResponse;
 
   const url = new URL(request.url);
@@ -92,8 +99,7 @@ export const DELETE: APIRoute = async ({ request }) => {
     });
   }
 
-  const db = getDb();
-  db.prepare('DELETE FROM users WHERE id = ?').run(targetId);
+  await db.delete(users).where(eq(users.id, targetId));
 
   return new Response(JSON.stringify({ success: true, deletedId: targetId }), {
     status: 200,

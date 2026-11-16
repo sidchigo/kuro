@@ -156,7 +156,7 @@ flowchart TD
 
 ## 7. Multi-User Architecture & Role-Based Access Control (RBAC)
 
-kuro. features a self-contained, multi-tenant persistence layer using Node's native `node:sqlite` engine (`data/kuro.db`) with zero external binary dependencies.
+kuro. features a modern, type-safe persistence layer using **Drizzle ORM** with SQLite (`data/kuro.db`). It provides full schema type inference, zero runtime query-engine overhead, and built-in **Drizzle Studio** visual database inspection.
 
 ### Security & Session Engine
 - **Password Hashing**: Cryptographically secure salted `scrypt` hashing (64-byte key length with random 16-byte salt) paired with `timingSafeEqual` comparison to eliminate timing-attack vectors.
