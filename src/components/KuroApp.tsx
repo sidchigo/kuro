@@ -275,6 +275,9 @@ export default function KuroApp() {
   };
 
   const selectSeedMovie = async (movieId: number, fallbackInfo?: Partial<SeedMovie>) => {
+    if (fallbackInfo && fallbackInfo.title && fallbackInfo.posterUrl) {
+      setSelectedSeed(fallbackInfo as SeedMovie);
+    }
     try {
       const res = await fetch(`/api/search?id=${movieId}`);
       if (res.ok) {

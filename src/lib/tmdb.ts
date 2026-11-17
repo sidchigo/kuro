@@ -117,6 +117,32 @@ export async function fetchSeedMovieDetails(movieId: number, customKey?: string)
 }
 
 /**
+ * Dynamically fetches a truly random horror film directly from TMDB
+ * with_genres=27 across active pages, zero hardcoded pools.
+ */
+export async function fetchRandomHorrorMovie(customKey?: string): Promise<SeedMovie | null> {
+  const apiKey = getTmdbApiKey(customKey);
+  if (!apiKey) {
+    console.warn('[TMDB] TMDB_API_KEY is not configured.');
+    return null;
+  }
+
+  try {
+    const randomPage = Math.floor(Math.random() * 40) + 1;
+    const discoverUrl = `${TMDB_BASE_URL}/discover/movie?api_key=${apiKey}&with_genres=27&vote_count.gte=50&vote_average.gte=4.5&sort_by=popularity.desc&page=${randomPage}`;
+    const data = await tmdbFetch<any>(discoverUrl);
+    const results = (data.results || []) as Array<{ id: number }>;
+    if (results.length === 0) return null;
+
+    const chosen = results[Math.floor(Math.random() * results.length)];
+    return await fetchSeedMovieDetails(chosen.id, customKey);
+  } catch (error) {
+    console.error('[TMDB] Random horror fetch error:', error);
+    return null;
+  }
+}
+
+/**
  * Parallel lookup: resolve text terms to TMDB keyword IDs.
  */
 export async function resolveKeywordIds(terms: string[], customKey?: string): Promise<number[]> {
