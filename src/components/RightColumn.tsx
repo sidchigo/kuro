@@ -33,13 +33,6 @@ export default function RightColumn({
   return (
     <aside className="hidden lg:flex sticky top-0 h-screen p-8 flex-col justify-between border-l border-[#262629] overflow-y-auto select-none">
       <div className="space-y-6">
-        {currentUser && (
-          <div className="pb-3 border-b border-[#262629] font-mono text-[10px] text-[#8A8882] uppercase flex items-center justify-between">
-            <span>MY ARCHIVE</span>
-            <span className="text-[#F2EFE9] font-mono font-bold">@{currentUser.username}</span>
-          </div>
-        )}
-        
         {/* 1. Plan to Watch (Watchlist) */}
         <div>
           <div className="flex items-center justify-between border-b border-[#262629] pb-2 mb-3">

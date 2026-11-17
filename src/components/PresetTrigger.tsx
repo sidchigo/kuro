@@ -1,20 +1,49 @@
 import type { Preset } from '../lib/types';
 
 interface PresetTriggerProps {
-  preset?: Preset;
-  onPresetChange?: (preset: Preset) => void;
+  preset: Preset;
+  onPresetChange: (preset: Preset) => void;
   canDiscover: boolean;
   isDiscovering: boolean;
   onDiscover: () => void;
 }
 
 export default function PresetTrigger({
+  preset,
+  onPresetChange,
   canDiscover,
   isDiscovering,
   onDiscover,
 }: PresetTriggerProps) {
+  const PRESET_OPTIONS: { id: Preset; label: string }[] = [
+    { id: 'all', label: 'ALL' },
+    { id: 'cult', label: 'CULT GEMS' },
+    { id: 'foreign', label: 'FOREIGN' },
+  ];
+
   return (
     <section className="bg-[#0A0A0B]">
+      {/* 3 Equal-Width Preset Filter Buttons */}
+      <div className="grid grid-cols-3 border-b border-[#262629] divide-x divide-[#262629]">
+        {PRESET_OPTIONS.map((p) => {
+          const isActive = preset === p.id;
+          return (
+            <button
+              key={p.id}
+              type="button"
+              onClick={() => onPresetChange(p.id)}
+              className={`h-11 font-mono text-[11px] tracking-wider uppercase transition-colors ${
+                isActive
+                  ? 'bg-[#F2EFE9] text-[#0A0A0B] font-bold'
+                  : 'bg-transparent text-[#8A8882] hover:text-[#F2EFE9]'
+              }`}
+            >
+              {p.label}
+            </button>
+          );
+        })}
+      </div>
+
       {/* Full-Bleed CTA Button */}
       <button
         type="button"
