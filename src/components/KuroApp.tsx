@@ -592,6 +592,31 @@ export default function KuroApp() {
     fetch(`/api/user/seen?id=${id}`, { method: 'DELETE' }).catch(() => {});
   };
 
+  const handleToggleSeen = (movie: {
+    id: number;
+    title: string;
+    year?: number;
+    director?: string;
+    originalLanguage?: string;
+    posterUrl?: string;
+  }) => {
+    if (!currentUser) {
+      setIsAuthModalOpen(true);
+      return;
+    }
+
+    const matched = seenList.find(
+      (s) => s.id === movie.id || normalizeTitle(s.title) === normalizeTitle(movie.title)
+    );
+
+    if (matched) {
+      handleUndoSeen(matched.id);
+      return;
+    }
+
+    addMovieToSeen(movie);
+  };
+
   const handleClearSeen = () => {
     if (!currentUser) return;
     updateSeenList(() => []);
@@ -631,7 +656,7 @@ export default function KuroApp() {
           selectedSeed={selectedSeed}
           onSelectSeed={selectSeedMovie}
           onToggleWatchlist={handleToggleWatchlist}
-          onMarkSeen={(movie) => handleMarkSeenWithAuth(movie)}
+          onMarkSeen={(movie) => handleToggleSeen(movie)}
           isInWatchlist={isSeedInWatchlist}
           isSeen={isSeedSeen}
         />
@@ -735,7 +760,7 @@ export default function KuroApp() {
             onSelectSeed={selectSeedMovie}
             onClearSeed={() => setSelectedSeed(null)}
             onToggleWatchlist={handleToggleWatchlist}
-            onMarkSeen={(movie) => handleMarkSeenWithAuth(movie)}
+            onMarkSeen={(movie) => handleToggleSeen(movie)}
             isInWatchlist={isSeedInWatchlist}
             isSeen={isSeedSeen}
           />
@@ -760,13 +785,14 @@ export default function KuroApp() {
           <ResultsStack
             discoveryResults={discoveryResults}
             watchlist={watchlist}
+            seenList={seenList}
             onToggleWatchlist={handleToggleWatchlist}
             onUseAsSeed={(movie) => {
               selectSeedMovie(movie.id, movie);
               setDiscoveryResults(null);
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
-            onMarkSeen={(movie) => handleMarkSeenWithAuth(movie)}
+            onMarkSeen={(movie) => handleToggleSeen(movie)}
             resultsRef={resultsRef}
           />
         </main>
@@ -779,7 +805,7 @@ export default function KuroApp() {
           recentSeeds={recentSeeds}
           seenList={seenList}
           onSelectWatchlistSeed={(item) => selectSeedMovie(item.id, item)}
-          onWatchlistMarkSeen={(item) => handleMarkSeenWithAuth(item)}
+          onWatchlistMarkSeen={(item) => handleToggleSeen(item)}
           onRemoveWatchlist={handleRemoveFromWatchlist}
           onLoadRecentSeed={handleLoadRecentSeed}
           onRateSeenMovie={handleRateSeenMovie}
@@ -804,7 +830,7 @@ export default function KuroApp() {
           setDiscoveryResults(null);
         }}
         onRemoveWatchlist={handleRemoveFromWatchlist}
-        onWatchlistMarkSeen={(item) => handleMarkSeenWithAuth(item)}
+        onWatchlistMarkSeen={(item) => handleToggleSeen(item)}
         onRateSeenMovie={handleRateSeenMovie}
         onUndoSeen={handleUndoSeen}
         onClearSeen={handleClearSeen}

@@ -9,6 +9,7 @@ interface ResultsStackProps {
     fallbackReason?: string;
   } | null;
   watchlist: { id: number; title: string }[];
+  seenList?: { id: number; title: string }[];
   onToggleWatchlist: (movie: HorrorMatch) => void;
   onUseAsSeed: (movie: HorrorMatch) => void;
   onMarkSeen: (movie: HorrorMatch) => void;
@@ -18,6 +19,7 @@ interface ResultsStackProps {
 export default function ResultsStack({
   discoveryResults,
   watchlist,
+  seenList = [],
   onToggleWatchlist,
   onUseAsSeed,
   onMarkSeen,
@@ -54,6 +56,7 @@ export default function ResultsStack({
               : `https://letterboxd.com/search/${encodeURIComponent(movie.title)}/`;
 
             const inWatchlist = watchlist.some((w) => w.id === movie.id);
+            const isSeen = seenList.some((s) => s.id === movie.id);
 
             return (
               <article key={movie.id} className="flex bg-[#0A0A0B]">
@@ -158,9 +161,13 @@ export default function ResultsStack({
                       <button
                         type="button"
                         onClick={() => onMarkSeen(movie)}
-                        className="border border-[#262629] px-2 py-0.5 text-[#8A8882] hover:text-[#E62E25] hover:border-[#E62E25] transition-colors uppercase text-[9px]"
+                        className={`border px-2 py-0.5 uppercase transition-colors text-[9px] ${
+                          isSeen
+                            ? 'border-[#E62E25] text-[#E62E25] bg-[#E62E25]/10 hover:bg-[#E62E25] hover:text-[#0A0A0B]'
+                            : 'border-[#262629] text-[#8A8882] hover:text-[#E62E25] hover:border-[#E62E25]'
+                        }`}
                       >
-                        [MARK SEEN]
+                        {isSeen ? '[SEEN ✓]' : '[MARK SEEN]'}
                       </button>
                     </div>
                   </div>
