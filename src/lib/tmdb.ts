@@ -54,9 +54,9 @@ export async function searchTmdbMovies(query: string, customKey?: string): Promi
 
     return results
       .filter((m) => {
-        // Prioritize horror (27), thriller (53), or mystery (9648)
-        if (!m.genre_ids || m.genre_ids.length === 0) return true;
-        return m.genre_ids.includes(27) || m.genre_ids.includes(53) || m.genre_ids.includes(9648);
+        // Kuro is strictly niche horror: require horror genre (27)
+        if (!m.genre_ids || m.genre_ids.length === 0) return false;
+        return m.genre_ids.includes(27);
       })
       .slice(0, 10)
       .map((m) => ({

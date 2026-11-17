@@ -591,7 +591,7 @@ export default function KuroApp() {
   }, [watchlist, seenList]);
 
   return (
-    <div className="w-full min-h-screen bg-[#0A0A0B] text-[#F2EFE9] selection:bg-[#E62E25] selection:text-[#0A0A0B]">
+    <div className="w-full min-h-screen bg-[#0A0A0B] text-[#F2EFE9]">
       {/* 3-Column Responsive Grid */}
       <div className="lg:grid lg:grid-cols-[1fr_430px_1fr] min-h-screen">
         

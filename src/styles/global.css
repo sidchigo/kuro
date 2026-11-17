@@ -41,16 +41,17 @@
     background: #E62E25;
     color: #0A0A0B;
   }
+}
 
-  /* High-contrast selection inside the red sentence canvas */
-  textarea.sentence-canvas-textarea::selection,
-  .sentence-canvas-textarea::selection,
-  .sentence-canvas-textarea::-moz-selection,
-  .sentence-canvas-section textarea::selection,
-  .sentence-canvas-section ::selection,
-  .sentence-canvas-section *::selection,
-  .sentence-canvas-section::-moz-selection {
-    background-color: #ffffff !important;
-    color: #000000 !important;
-  }
+/* High-contrast stark white selection inside the red sentence canvas */
+textarea.sentence-canvas-textarea::selection,
+.sentence-canvas-textarea::selection,
+.sentence-canvas-textarea::-moz-selection,
+.sentence-canvas-section textarea::selection,
+.sentence-canvas-section ::selection,
+.sentence-canvas-section *::selection,
+.sentence-canvas-section::-moz-selection {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+  -webkit-text-fill-color: #000000 !important;
 }
