@@ -4,13 +4,12 @@ services:
     container_name: kuro
     restart: unless-stopped
     ports:
-      - "4322:4321"
+      - "127.0.0.1:4322:4321"
     environment:
       - NODE_ENV=production
       - HOST=0.0.0.0
       - PORT=4321
-      - TMDB_API_KEY=${TMDB_API_KEY}
-      - INITIAL_ADMIN_PASSWORD=${INITIAL_ADMIN_PASSWORD:-kuroadmin123}
-      - SESSION_SECRET=${SESSION_SECRET:-}
+      - TMDB_API_KEY=08b7ff6f7cf44ab62a9011ea6a91130c
+      - INITIAL_ADMIN_PASSWORD=kuroadmin123
     volumes:
       - ./data:/app/data
