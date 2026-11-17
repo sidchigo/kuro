@@ -5,9 +5,20 @@ import PosterImage from './PosterImage';
 interface LeftColumnProps {
   selectedSeed: SeedMovie | null;
   onSelectSeed?: (movieId: number, fallbackInfo?: Partial<SeedMovie>) => void;
+  onToggleWatchlist?: (movie: SeedMovie) => void;
+  onMarkSeen?: (movie: SeedMovie) => void;
+  isInWatchlist?: boolean;
+  isSeen?: boolean;
 }
 
-export default function LeftColumn({ selectedSeed, onSelectSeed }: LeftColumnProps) {
+export default function LeftColumn({
+  selectedSeed,
+  onSelectSeed,
+  onToggleWatchlist,
+  onMarkSeen,
+  isInWatchlist = false,
+  isSeen = false,
+}: LeftColumnProps) {
   const [isRolling, setIsRolling] = useState(false);
 
   const handleRandomRoll = async () => {
@@ -60,6 +71,36 @@ export default function LeftColumn({ selectedSeed, onSelectSeed }: LeftColumnPro
                 {selectedSeed.director ? `DIR. ${selectedSeed.director.toUpperCase()} · ` : ''}
                 {selectedSeed.year || '----'} · [{selectedSeed.originalLanguage}]
               </p>
+              {(onToggleWatchlist || onMarkSeen) && (
+                <div className="flex items-center gap-1.5 mt-2.5 pt-2 border-t border-[#262629] font-mono text-[9px]">
+                  {onToggleWatchlist && (
+                    <button
+                      type="button"
+                      onClick={() => onToggleWatchlist(selectedSeed)}
+                      className={`border px-2 py-0.5 uppercase transition-colors ${
+                        isInWatchlist
+                          ? 'border-[#E62E25] text-[#E62E25] bg-[#E62E25]/10 hover:bg-[#E62E25] hover:text-[#0A0A0B]'
+                          : 'border-[#262629] text-[#8A8882] hover:text-[#F2EFE9] hover:border-[#F2EFE9]'
+                      }`}
+                    >
+                      {isInWatchlist ? '[PLAN ✓]' : '[+ PLAN]'}
+                    </button>
+                  )}
+                  {onMarkSeen && (
+                    <button
+                      type="button"
+                      onClick={() => onMarkSeen(selectedSeed)}
+                      className={`border px-2 py-0.5 uppercase transition-colors ${
+                        isSeen
+                          ? 'border-[#E62E25] text-[#E62E25] bg-[#E62E25]/10'
+                          : 'border-[#262629] text-[#8A8882] hover:text-[#E62E25] hover:border-[#E62E25]'
+                      }`}
+                    >
+                      {isSeen ? '[SEEN ✓]' : '[MARK SEEN]'}
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         ) : (

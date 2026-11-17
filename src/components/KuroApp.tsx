@@ -12,6 +12,7 @@ import RightColumn from './RightColumn';
 import MobileDrawer from './MobileDrawer';
 import AuthModal from './AuthModal';
 import AdminPanel from './AdminPanel';
+import LibraryModal from './LibraryModal';
 
 function normalizeTitle(t?: string | null): string {
   if (!t) return '';
@@ -286,7 +287,6 @@ export default function KuroApp() {
           setSelectedSeed(data.movie);
           if (currentUser) {
             addRecentSeed(data.movie);
-            addMovieToSeen(data.movie);
           }
           return;
         }
@@ -310,7 +310,6 @@ export default function KuroApp() {
     setSelectedSeed(constructed);
     if (currentUser) {
       addRecentSeed(constructed);
-      addMovieToSeen(constructed);
     }
   };
 
@@ -496,7 +495,20 @@ export default function KuroApp() {
     }
   };
 
-  const handleToggleWatchlist = (movie: HorrorMatch) => {
+  const handleToggleWatchlist = (movie: {
+    id: number;
+    title: string;
+    year?: number;
+    originalLanguage?: string;
+    runtime?: number;
+    posterUrl?: string;
+    voteAverage?: number;
+    pitch?: string;
+    catchWarning?: string;
+    director?: string;
+    similarity?: number;
+    explanation?: string;
+  }) => {
     if (!currentUser) {
       setIsAuthModalOpen(true);
       return;
@@ -593,22 +605,60 @@ export default function KuroApp() {
     });
   }, [watchlist, seenList]);
 
+  const [isLibraryOpen, setIsLibraryOpen] = useState(false);
+  const [libraryTab, setLibraryTab] = useState<'watchlist' | 'seen' | 'recent'>('watchlist');
+
+  const openLibrary = (tab: 'watchlist' | 'seen' | 'recent' = 'watchlist') => {
+    setLibraryTab(tab);
+    setIsLibraryOpen(true);
+  };
+
+  const isSeedInWatchlist = selectedSeed
+    ? watchlist.some((w) => w.id === selectedSeed.id || normalizeTitle(w.title) === normalizeTitle(selectedSeed.title))
+    : false;
+
+  const isSeedSeen = selectedSeed
+    ? seenList.some((s) => s.id === selectedSeed.id || normalizeTitle(s.title) === normalizeTitle(selectedSeed.title))
+    : false;
+
   return (
     <div className="w-full min-h-screen bg-[#0A0A0B] text-[#F2EFE9]">
       {/* 3-Column Responsive Grid */}
       <div className="lg:grid lg:grid-cols-[1fr_430px_1fr] min-h-screen">
         
         {/* 1. LEFT COLUMN: Oversized Branding & Dynamic Poster Stage */}
-        <LeftColumn selectedSeed={selectedSeed} onSelectSeed={selectSeedMovie} />
+        <LeftColumn
+          selectedSeed={selectedSeed}
+          onSelectSeed={selectSeedMovie}
+          onToggleWatchlist={handleToggleWatchlist}
+          onMarkSeen={(movie) => handleMarkSeenWithAuth(movie)}
+          isInWatchlist={isSeedInWatchlist}
+          isSeen={isSeedSeen}
+        />
 
         {/* 2. CENTER COLUMN: Core 430px Interactive Strip */}
         <main className="w-full max-w-[430px] mx-auto min-h-screen border-x border-[#262629] flex flex-col bg-[#0A0A0B]">
           
-          {/* Header Bar with RBAC User Status */}
+          {/* Header Bar with RBAC User Status & Unrestricted Library Trigger */}
           <header className="h-12 px-3 flex items-center justify-between border-b border-[#262629] bg-[#0A0A0B] sticky top-0 z-30">
             <span className="font-serif text-2xl font-normal tracking-tight text-[#F2EFE9] lg:hidden">
               kuro<span className="text-[#E62E25]">.</span>
             </span>
+
+            {/* Dedicated Library Trigger Button */}
+            <button
+              type="button"
+              onClick={() => openLibrary('watchlist')}
+              className="font-mono text-[10px] uppercase text-[#F2EFE9] hover:text-[#E62E25] border border-[#262629] hover:border-[#E62E25] px-2 py-1 transition-colors flex items-center gap-1.5"
+              title="Open full dedicated watchlist and seen library"
+            >
+              <span>[LIBRARY]</span>
+              {currentUser && (
+                <span className="text-[#8A8882]">
+                  {sortedWatchlist.length + seenList.length}
+                </span>
+              )}
+            </button>
 
             {/* User & RBAC Controls */}
             <div className="flex items-center gap-1.5 font-mono text-[10px] ml-auto">
@@ -684,6 +734,10 @@ export default function KuroApp() {
             selectedSeed={selectedSeed}
             onSelectSeed={selectSeedMovie}
             onClearSeed={() => setSelectedSeed(null)}
+            onToggleWatchlist={handleToggleWatchlist}
+            onMarkSeen={(movie) => handleMarkSeenWithAuth(movie)}
+            isInWatchlist={isSeedInWatchlist}
+            isSeen={isSeedSeen}
           />
 
           {/* Block 02 / THE SENTENCE CANVAS */}
@@ -731,9 +785,32 @@ export default function KuroApp() {
           onRateSeenMovie={handleRateSeenMovie}
           onUndoSeen={handleUndoSeen}
           onClearSeen={handleClearSeen}
+          onOpenLibrary={openLibrary}
         />
 
       </div>
+
+      {/* Dedicated Unrestricted Library & Archive Modal */}
+      <LibraryModal
+        isOpen={isLibraryOpen}
+        onClose={() => setIsLibraryOpen(false)}
+        watchlist={sortedWatchlist}
+        seenList={seenList}
+        recentSeeds={recentSeeds}
+        isAuthenticated={!!currentUser}
+        onOpenAuth={() => setIsAuthModalOpen(true)}
+        onSelectSeed={(movieId, fallbackInfo) => {
+          selectSeedMovie(movieId, fallbackInfo);
+          setDiscoveryResults(null);
+        }}
+        onRemoveWatchlist={handleRemoveFromWatchlist}
+        onWatchlistMarkSeen={(item) => handleMarkSeenWithAuth(item)}
+        onRateSeenMovie={handleRateSeenMovie}
+        onUndoSeen={handleUndoSeen}
+        onClearSeen={handleClearSeen}
+        onLoadRecentSeed={handleLoadRecentSeed}
+        initialTab={libraryTab}
+      />
 
       {/* Auth Modal (Sign In / Register) */}
       <AuthModal

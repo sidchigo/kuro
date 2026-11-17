@@ -14,6 +14,7 @@ interface RightColumnProps {
   onRateSeenMovie: (id: number, rating: number) => void;
   onUndoSeen: (id: number) => void;
   onClearSeen: () => void;
+  onOpenLibrary?: (tab?: 'watchlist' | 'seen' | 'recent') => void;
 }
 
 export default function RightColumn({
@@ -29,16 +30,42 @@ export default function RightColumn({
   onRateSeenMovie,
   onUndoSeen,
   onClearSeen,
+  onOpenLibrary,
 }: RightColumnProps) {
   return (
     <aside className="hidden lg:flex sticky top-0 h-screen p-8 flex-col justify-between border-l border-[#262629] overflow-y-auto select-none">
       <div className="space-y-6">
+        {/* Top Header with Unrestricted Library Trigger */}
+        <div className="flex items-center justify-between pb-3 border-b border-[#262629]">
+          <span className="font-mono text-xs uppercase tracking-widest text-[#F2EFE9]">
+            MY ARCHIVE
+          </span>
+          {currentUser && onOpenLibrary && (
+            <button
+              type="button"
+              onClick={() => onOpenLibrary('watchlist')}
+              className="font-mono text-[9px] uppercase text-[#E62E25] hover:text-[#F2EFE9] border border-[#262629] hover:border-[#E62E25] px-2 py-0.5 transition-colors"
+            >
+              [FULL VIEW ↗]
+            </button>
+          )}
+        </div>
+
         {/* 1. Plan to Watch (Watchlist) */}
         <div>
           <div className="flex items-center justify-between border-b border-[#262629] pb-2 mb-3">
             <span className="font-mono text-xs tracking-widest text-[#8A8882] uppercase">
               PLAN TO WATCH {currentUser ? `(${sortedWatchlist.length})` : ''}
             </span>
+            {currentUser && onOpenLibrary && (
+              <button
+                type="button"
+                onClick={() => onOpenLibrary('watchlist')}
+                className="font-mono text-[9px] uppercase text-[#8A8882] hover:text-[#E62E25] transition-colors"
+              >
+                VIEW ALL ↗
+              </button>
+            )}
           </div>
 
           {!currentUser ? (
@@ -179,15 +206,26 @@ export default function RightColumn({
             <span className="font-mono text-xs tracking-widest text-[#8A8882] uppercase">
               ALREADY SEEN {currentUser ? `(${seenList.length})` : ''}
             </span>
-            {currentUser && seenList.length > 0 && (
-              <button
-                type="button"
-                onClick={onClearSeen}
-                className="font-mono text-[9px] text-[#8A8882] hover:text-[#E62E25] transition-colors uppercase"
-              >
-                CLEAR
-              </button>
-            )}
+            <div className="flex items-center gap-2">
+              {currentUser && onOpenLibrary && (
+                <button
+                  type="button"
+                  onClick={() => onOpenLibrary('seen')}
+                  className="font-mono text-[9px] uppercase text-[#8A8882] hover:text-[#E62E25] transition-colors"
+                >
+                  VIEW ALL ↗
+                </button>
+              )}
+              {currentUser && seenList.length > 0 && (
+                <button
+                  type="button"
+                  onClick={onClearSeen}
+                  className="font-mono text-[9px] text-[#8A8882] hover:text-[#E62E25] transition-colors uppercase"
+                >
+                  CLEAR
+                </button>
+              )}
+            </div>
           </div>
 
           {!currentUser ? (
