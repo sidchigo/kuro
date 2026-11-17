@@ -596,7 +596,7 @@ export default function KuroApp() {
       <div className="lg:grid lg:grid-cols-[1fr_430px_1fr] min-h-screen">
         
         {/* 1. LEFT COLUMN: Oversized Branding & Dynamic Poster Stage */}
-        <LeftColumn selectedSeed={selectedSeed} />
+        <LeftColumn selectedSeed={selectedSeed} onSelectSeed={selectSeedMovie} />
 
         {/* 2. CENTER COLUMN: Core 430px Interactive Strip */}
         <main className="w-full max-w-[430px] mx-auto min-h-screen border-x border-[#262629] flex flex-col bg-[#0A0A0B]">
