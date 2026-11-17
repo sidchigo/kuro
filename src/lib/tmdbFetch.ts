@@ -7,7 +7,7 @@ import https from 'node:https';
 export async function tmdbFetch<T = any>(
   url: string,
   headers: Record<string, string> = {},
-  retries = 2
+  retries = 4
 ): Promise<T> {
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
@@ -15,8 +15,10 @@ export async function tmdbFetch<T = any>(
         const req = https.get(
           url,
           {
+            agent: false,
             headers: {
               Accept: 'application/json',
+              Connection: 'close',
               'User-Agent':
                 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
               ...headers,
