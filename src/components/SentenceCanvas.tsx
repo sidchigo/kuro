@@ -50,18 +50,18 @@ const SentenceCanvas = forwardRef<SentenceCanvasHandle, SentenceCanvasProps>(
     };
 
     return (
-      <section className="p-6 bg-[#E62E25] text-[#0A0A0B] border-b border-[#262629]">
+      <section className="p-6 bg-[#0E0E10] text-[#F2EFE9] border-b border-[#262629] selection:bg-[#E62E25] selection:text-[#F2EFE9]">
         {/* Top Row: Title & Counter */}
         <div className="flex items-center justify-between mb-2">
-          <span className="font-mono text-[11px] font-bold tracking-wider uppercase">
+          <span className="font-mono text-[10px] tracking-widest text-[#8A8882] uppercase">
             02 / WHAT STAYED WITH YOU
           </span>
-          <span className="font-mono text-[11px] font-bold tracking-widest">
+          <span className="font-mono text-[10px] text-[#8A8882] tracking-widest">
             {sentence.length} / 140
           </span>
         </div>
 
-        {/* Centerpiece: Borderless Auto-Resizing 26px Instrument Serif Textarea */}
+        {/* Centerpiece: Borderless Auto-Resizing 24px Instrument Serif Textarea */}
         <textarea
           ref={textareaRef}
           rows={2}
@@ -69,17 +69,17 @@ const SentenceCanvas = forwardRef<SentenceCanvasHandle, SentenceCanvasProps>(
           value={sentence}
           onChange={handleChange}
           placeholder="The unhurried dread of knowing something was watching through the camera..."
-          className="w-full bg-transparent text-[#0A0A0B] placeholder:text-[#0A0A0B]/60 focus:outline-none resize-none font-serif text-[26px] leading-[1.15] py-2 border-0 outline-none"
+          className="w-full bg-transparent text-[#F2EFE9] placeholder:text-[#8A8882]/40 focus:outline-none resize-none font-serif text-[24px] leading-[1.25] py-2 border-0 outline-none selection:bg-[#E62E25] selection:text-white"
         />
 
-        {/* Bottom Row: Starter Pills */}
-        <div className="flex flex-col gap-1.5 mt-3 pt-3 border-t border-black/20">
+        {/* Bottom Row: Starter Suggestions */}
+        <div className="flex flex-col gap-1.5 mt-3 pt-3 border-t border-[#262629]">
           {STARTER_PILLS.map((pill, idx) => (
             <button
               key={idx}
               type="button"
               onClick={() => handleStarterPillClick(pill)}
-              className="font-mono text-[10px] border border-black/80 px-2 py-1 text-left text-[#0A0A0B] hover:bg-black hover:text-[#E62E25] transition-colors leading-tight"
+              className="font-mono text-[10px] border border-[#262629] px-2.5 py-1 text-left text-[#8A8882] hover:text-[#F2EFE9] hover:border-[#E62E25] hover:bg-[#121214] transition-colors leading-tight"
             >
               {pill}
             </button>

@@ -446,6 +446,14 @@ async function getOrComputeAnchors(pipe: any): Promise<Map<string, { anchor: Vib
   return map;
 }
 
+function calibrateMatchPercentage(rawSimilarity: number): number {
+  const floor = 0.18;
+  const ceiling = 0.55;
+  const clamped = Math.max(floor, Math.min(ceiling, rawSimilarity));
+  const normalized = (clamped - floor) / (ceiling - floor);
+  return Math.min(98, Math.max(72, Math.round(75 + normalized * 22)));
+}
+
 /**
  * Deterministic explanation synthesis combining top 1-2 vibe anchor affinities
  * with TMDB origin country / language into:
@@ -476,7 +484,7 @@ function generateDeterministicExplanation(
   const originName = ORIGIN_LANG_MAP[langCode];
   const originPrefix = originName && langCode !== 'en' ? `${originName} ` : '';
 
-  const pct = Math.round(similarity * 100);
+  const pct = calibrateMatchPercentage(similarity);
 
   let explanation = '';
   if (top1 && top2 && top2.anchorId !== top1.anchorId) {
@@ -567,21 +575,22 @@ self.onmessage = async (e: MessageEvent) => {
 
       const scored = candidateList.map((c) => {
         const vec = vectorMap.get(c.id)!;
-        const score = dotProduct(qVec, vec);
-        const rounded = Math.round(score * 100) / 100;
-        scores[c.id] = rounded;
+        const rawScore = dotProduct(qVec, vec);
+        const calibratedPct = calibrateMatchPercentage(rawScore);
+        const calibratedRatio = calibratedPct / 100;
+        scores[c.id] = calibratedRatio;
 
         const { explanation, topThemes } = generateDeterministicExplanation(
           c,
           vec,
           qVec,
-          score,
+          rawScore,
           anchorsMap
         );
         explanations[c.id] = explanation;
         topThemesMap[c.id] = topThemes;
 
-        return { id: c.id, score: rounded };
+        return { id: c.id, score: rawScore };
       });
 
       scored.sort((a, b) => b.score - a.score);

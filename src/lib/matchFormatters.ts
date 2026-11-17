@@ -122,6 +122,18 @@ function dotProduct(a: Float32Array, b: Float32Array): number {
   return dot;
 }
 
+/**
+ * Calibrates raw 256-d EmbeddingGemma cosine similarities (typically 0.18 - 0.55)
+ * into an intuitive human-facing match percentage (75% - 98%).
+ */
+export function calibrateMatchPercentage(rawSimilarity: number): number {
+  const floor = 0.18;
+  const ceiling = 0.55;
+  const clamped = Math.max(floor, Math.min(ceiling, rawSimilarity));
+  const normalized = (clamped - floor) / (ceiling - floor);
+  return Math.min(98, Math.max(72, Math.round(75 + normalized * 22)));
+}
+
 export function generateDeterministicExplanation(
   movie: { original_language?: string },
   movieVec: Float32Array,
@@ -147,7 +159,7 @@ export function generateDeterministicExplanation(
   const originName = ORIGIN_LANG_MAP[langCode];
   const originPrefix = originName && langCode !== 'en' ? `${originName} ` : '';
 
-  const pct = Math.round(similarity * 100);
+  const pct = calibrateMatchPercentage(similarity);
 
   let explanation = '';
   if (top1 && top2 && top2.anchorId !== top1.anchorId) {

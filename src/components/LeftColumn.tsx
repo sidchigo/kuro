@@ -14,7 +14,7 @@ export default function LeftColumn({ selectedSeed }: LeftColumnProps) {
           kuro<span className="text-[#E62E25]">.</span>
         </h1>
         <p className="font-mono text-[11px] text-[#8A8882] tracking-wider uppercase mt-3 leading-relaxed">
-          One film. One sentence.<br />Zero algorithm slop.
+          Horror film discovery.
         </p>
       </div>
 
@@ -49,16 +49,15 @@ export default function LeftColumn({ selectedSeed }: LeftColumnProps) {
               — 00 —
             </span>
             <p className="font-mono text-[10px] text-[#8A8882]/70 tracking-widest uppercase mt-2">
-              NO SEED SELECTED
+              SELECT A FILM TO START
             </p>
           </div>
         )}
       </div>
 
-      {/* Bottom: Editorial Grid Colophon */}
-      <div className="pt-4 border-t border-[#262629] font-mono text-[10px] text-[#8A8882] flex justify-between uppercase tracking-wider">
-        <span>GRID / TOKYO EDITORIAL</span>
-        <span>FINDERS ARCHIVE</span>
+      {/* Bottom spacer */}
+      <div className="pt-4 border-t border-[#262629] font-mono text-[10px] text-[#8A8882] flex justify-between uppercase tracking-wider opacity-0 pointer-events-none">
+        <span>KURO</span>
       </div>
     </aside>
   );

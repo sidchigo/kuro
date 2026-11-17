@@ -82,7 +82,7 @@ export const POST: APIRoute = async ({ request }) => {
       status: 201,
       headers: {
         'Content-Type': 'application/json',
-        'Set-Cookie': createSessionCookieHeader(token, expiresAt),
+        'Set-Cookie': createSessionCookieHeader(token, expiresAt, request),
       },
     });
   } catch (error) {

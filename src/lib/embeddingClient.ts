@@ -150,9 +150,9 @@ export function scheduleIdleWarmup(): void {
   };
 
   if ('requestIdleCallback' in window) {
-    (window as any).requestIdleCallback(runWarmup, { timeout: 3500 });
+    (window as any).requestIdleCallback(runWarmup, { timeout: 800 });
   } else {
-    setTimeout(runWarmup, 2500);
+    setTimeout(runWarmup, 500);
   }
 }
 

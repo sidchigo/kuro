@@ -7,6 +7,18 @@ interface AuthModalProps {
   onAuthSuccess: (user: User) => void;
 }
 
+async function hashClientPassword(pwd: string): Promise<string> {
+  if (typeof window !== 'undefined' && window.crypto?.subtle) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(pwd);
+    const hashBuffer = await window.crypto.subtle.digest('SHA-256', data);
+    return Array.from(new Uint8Array(hashBuffer))
+      .map((b) => b.toString(16).padStart(2, '0'))
+      .join('');
+  }
+  return pwd;
+}
+
 export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalProps) {
   const [tab, setTab] = useState<'login' | 'register'>('login');
   const [username, setUsername] = useState('');
@@ -24,10 +36,11 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalP
     const endpoint = tab === 'login' ? '/api/auth/login' : '/api/auth/register';
 
     try {
+      const securePassword = await hashClientPassword(password);
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: username.trim(), password }),
+        body: JSON.stringify({ username: username.trim(), password: securePassword }),
       });
 
       const data = await res.json();

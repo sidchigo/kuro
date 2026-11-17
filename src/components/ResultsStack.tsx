@@ -29,13 +29,12 @@ export default function ResultsStack({
 
   return (
     <section ref={resultsRef} className="border-b border-[#262629] bg-[#0A0A0B]">
-      {/* Header Row: Candidate Pool Size */}
-      <div className="p-3 border-b border-[#262629] bg-[#0A0A0B] flex items-center justify-between font-mono text-[10px] text-[#8A8882] uppercase tracking-widest">
-        <span>CURATED FROM {discoveryResults.candidateCount} VERIFIED CANDIDATES</span>
-        {discoveryResults.fallbackReason && (
-          <span className="text-[#E62E25]">[FALLBACK ENGAGED]</span>
-        )}
-      </div>
+      {/* Fallback Notice if any */}
+      {discoveryResults.fallbackReason && (
+        <div className="p-3 border-b border-[#262629] bg-[#0A0A0B] flex items-center justify-between font-mono text-[10px] text-[#E62E25] uppercase tracking-widest">
+          <span>{discoveryResults.fallbackReason}</span>
+        </div>
+      )}
 
       {matches.length === 0 ? (
         <div className="p-8 text-center font-mono text-xs text-[#8A8882] border-b border-[#262629]">
@@ -102,16 +101,6 @@ export default function ResultsStack({
                     <p className="font-sans text-xs text-[#F2EFE9]/90 leading-relaxed mt-2.5">
                       {movie.pitch}
                     </p>
-
-                    {/* Bordered Monospace Catch Caveat */}
-                    {movie.catchWarning && (
-                      <div className="mt-2.5 px-2 py-1.5 border border-[#262629] bg-[#121214]">
-                        <p className="font-mono text-[10px] text-[#8A8882] tracking-wide leading-relaxed">
-                          <span className="text-[#E62E25] font-bold mr-1.5">CATCH:</span>
-                          {movie.catchWarning}
-                        </p>
-                      </div>
-                    )}
                   </div>
 
                   {/* Bottom Action Bar */}

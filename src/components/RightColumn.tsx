@@ -33,6 +33,12 @@ export default function RightColumn({
   return (
     <aside className="hidden lg:flex sticky top-0 h-screen p-8 flex-col justify-between border-l border-[#262629] overflow-y-auto select-none">
       <div className="space-y-6">
+        {currentUser && (
+          <div className="pb-3 border-b border-[#262629] font-mono text-[10px] text-[#8A8882] uppercase flex items-center justify-between">
+            <span>MY ARCHIVE</span>
+            <span className="text-[#F2EFE9] font-mono font-bold">@{currentUser.username}</span>
+          </div>
+        )}
         
         {/* 1. Plan to Watch (Watchlist) */}
         <div>
@@ -89,7 +95,7 @@ export default function RightColumn({
                         onClick={() => onSelectWatchlistSeed(item)}
                         className="border border-[#262629] px-1.5 py-0.5 text-[#8A8882] hover:text-[#F2EFE9] hover:border-[#F2EFE9] transition-colors uppercase"
                       >
-                        [SEED]
+                        [USE AS BASE]
                       </button>
                       <button
                         type="button"
@@ -114,18 +120,18 @@ export default function RightColumn({
           )}
         </div>
 
-        {/* 2. Recent Seeds (With Saved Sentence Quote & 1-Click Restore) */}
+        {/* 2. Recent Searches (With Saved Sentence Quote & 1-Click Restore) */}
         <div>
           <div className="flex items-center justify-between border-b border-[#262629] pb-2 mb-3">
             <span className="font-mono text-xs tracking-widest text-[#8A8882] uppercase">
-              RECENT SEEDS {currentUser ? `(${recentSeeds.length})` : ''}
+              RECENT SEARCHES {currentUser ? `(${recentSeeds.length})` : ''}
             </span>
           </div>
 
           {!currentUser ? (
             <div className="border border-[#262629] p-3 bg-[#0A0A0B]">
               <p className="font-mono text-[9px] text-[#8A8882] uppercase tracking-wider leading-relaxed mb-2">
-                SIGN IN TO RECORD YOUR SEED PROMPT HISTORY
+                SIGN IN TO SAVE YOUR SEARCH HISTORY
               </p>
               <button
                 type="button"
@@ -137,7 +143,7 @@ export default function RightColumn({
             </div>
           ) : recentSeeds.length === 0 ? (
             <p className="font-mono text-[10px] text-[#8A8882]/60 uppercase tracking-wider py-1">
-              NO RECENT SEEDS RECORDED
+              NO RECENT SEARCHES
             </p>
           ) : (
             <div className="space-y-2">
@@ -266,9 +272,8 @@ export default function RightColumn({
 
       </div>
 
-      <div className="pt-4 border-t border-[#262629] font-mono text-[10px] text-[#8A8882] flex justify-between uppercase tracking-wider mt-6">
-        <span>DETERMINISTIC PIPELINE</span>
-        <span>NO ALGORITHM SLOP</span>
+      <div className="pt-4 border-t border-[#262629] font-mono text-[10px] text-[#8A8882] flex justify-between uppercase tracking-wider mt-6 opacity-0 pointer-events-none">
+        <span>KURO</span>
       </div>
     </aside>
   );

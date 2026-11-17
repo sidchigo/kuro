@@ -75,13 +75,8 @@ export default function SeedFilmSection({
     <section className="p-5 border-b border-[#262629] relative bg-[#0A0A0B]">
       <div className="flex items-center justify-between mb-2.5">
         <span className="font-mono text-[10px] tracking-widest text-[#8A8882] uppercase">
-          01 / SEED FILM
+          01 / STARTING FILM
         </span>
-        {selectedSeed && (
-          <span className="font-mono text-[10px] text-[#E62E25] uppercase tracking-wider">
-            ACTIVE ANCHOR
-          </span>
-        )}
       </div>
 
       {!selectedSeed ? (
@@ -140,7 +135,7 @@ export default function SeedFilmSection({
           {/* 3 Quick-Seed Chips */}
           <div className="pt-1 flex items-center gap-1.5 flex-wrap">
             <span className="font-mono text-[10px] text-[#8A8882] uppercase mr-1">
-              QUICK:
+              POPULAR:
             </span>
             {QUICK_SEEDS.map((chip) => (
               <button

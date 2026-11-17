@@ -64,15 +64,32 @@ function computeAffinityScore(item: WatchlistItem, seenList: SeenItem[]): number
   return score;
 }
 
+const DEFAULT_SEED: SeedMovie = {
+  id: 864370,
+  title: 'Incantation',
+  originalTitle: '咒',
+  year: 2022,
+  originalLanguage: 'ZH',
+  runtime: 111,
+  director: 'Kevin Ko',
+  overview:
+    'Six years ago, Li Ronan was cursed after breaking a religious taboo. Now, she must protect her daughter from the consequences of her actions.',
+  posterUrl: 'https://image.tmdb.org/t/p/w500/cWz28oGV3cSajWdziVQbqrYCmnX.jpg',
+  voteAverage: 6.9,
+  genres: ['Horror'],
+  keywords: ['curse', 'occult', 'religious cult', 'found footage', 'supernatural horror'],
+  imdbId: 'tt18968540',
+};
+
 export default function KuroApp() {
   // --- Auth & RBAC State ---
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isAdminPanelOpen, setIsAdminPanelOpen] = useState(false);
 
-  // --- Core States ---
-  const [selectedSeed, setSelectedSeed] = useState<SeedMovie | null>(null);
-  const [sentence, setSentence] = useState('');
+  // --- Core States (Zero Cold Start: Pre-warmed with Default Seed & Prompt) ---
+  const [selectedSeed, setSelectedSeed] = useState<SeedMovie | null>(DEFAULT_SEED);
+  const [sentence, setSentence] = useState('The creeping isolation of cult and eerie vibes');
   const [preset, setPreset] = useState<Preset>('all');
   const [isDiscovering, setIsDiscovering] = useState(false);
   const [discoveryResults, setDiscoveryResults] = useState<{
@@ -586,14 +603,14 @@ export default function KuroApp() {
           
           {/* Header Bar with RBAC User Status */}
           <header className="h-12 px-3 flex items-center justify-between border-b border-[#262629] bg-[#0A0A0B] sticky top-0 z-30">
-            <span className="font-serif text-2xl font-normal tracking-tight text-[#F2EFE9]">
+            <span className="font-serif text-2xl font-normal tracking-tight text-[#F2EFE9] lg:hidden">
               kuro<span className="text-[#E62E25]">.</span>
             </span>
 
             {/* User & RBAC Controls */}
-            <div className="flex items-center gap-1.5 font-mono text-[10px]">
+            <div className="flex items-center gap-1.5 font-mono text-[10px] ml-auto">
               {currentUser ? (
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-2">
                   {currentUser.role === 'admin' && (
                     <button
                       type="button"
@@ -604,15 +621,8 @@ export default function KuroApp() {
                       [ADMIN]
                     </button>
                   )}
-                  <span className="text-[#8A8882] truncate max-w-[90px]">
-                    {currentUser.username}
-                  </span>
-                  <span
-                    className={`px-1 py-0.2 text-[8px] uppercase tracking-wider font-semibold ${
-                      currentUser.role === 'admin' ? 'text-[#E62E25]' : 'text-[#8A8882]'
-                    }`}
-                  >
-                    [{currentUser.role}]
+                  <span className="text-[#F2EFE9] font-bold truncate max-w-[110px]">
+                    @{currentUser.username}
                   </span>
                   <button
                     type="button"
@@ -620,7 +630,7 @@ export default function KuroApp() {
                     className="text-[#8A8882] hover:text-[#E62E25] transition-colors ml-1"
                     title="Sign out"
                   >
-                    [OUT]
+                    [LOGOUT]
                   </button>
                 </div>
               ) : (

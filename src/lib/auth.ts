@@ -85,11 +85,14 @@ export function getCookieToken(request: Request): string | null {
   return null;
 }
 
-export function createSessionCookieHeader(token: string, expiresAt: number): string {
+export function createSessionCookieHeader(token: string, expiresAt: number, request?: Request): string {
   const expiresDate = new Date(expiresAt).toUTCString();
-  const isProduction = process.env.NODE_ENV === 'production';
-  return `${COOKIE_NAME}=${encodeURIComponent(token)}; Path=/; Expires=${expiresDate}; HttpOnly; SameSite=Lax${
-    isProduction ? '; Secure' : ''
+  const maxAgeSeconds = Math.max(0, Math.floor((expiresAt - Date.now()) / 1000));
+  const isHttps = request
+    ? request.url.startsWith('https://') || request.headers.get('x-forwarded-proto') === 'https'
+    : false;
+  return `${COOKIE_NAME}=${encodeURIComponent(token)}; Path=/; Max-Age=${maxAgeSeconds}; Expires=${expiresDate}; HttpOnly; SameSite=Lax${
+    isHttps ? '; Secure' : ''
   }`;
 }
 
