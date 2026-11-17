@@ -1,7 +1,10 @@
 import type { Preset, SeedMovie, MovieSearchResult, TMDBRawMovie } from './types';
+import { TMDB_IMAGE_BASE } from './constants';
+import { tmdbFetch } from './tmdbFetch';
+
+export { TMDB_IMAGE_BASE };
 
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
-export const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p/w500';
 
 export function getTmdbApiKey(customKey?: string): string | undefined {
   if (typeof customKey === 'string' && customKey.trim().length > 5) {
@@ -36,12 +39,7 @@ export async function searchTmdbMovies(query: string, customKey?: string): Promi
       trimmed
     )}&include_adult=false&language=en-US&page=1`;
 
-    const res = await fetch(url, { headers: { Accept: 'application/json' } });
-    if (!res.ok) {
-      throw new Error(`TMDB HTTP status ${res.status}`);
-    }
-
-    const data = await res.json();
+    const data = await tmdbFetch<any>(url);
     const results = (data.results || []) as Array<{
       id: number;
       title: string;
@@ -91,13 +89,8 @@ export async function fetchSeedMovieDetails(movieId: number, customKey?: string)
 
   try {
     const url = `${TMDB_BASE_URL}/movie/${movieId}?api_key=${apiKey}&append_to_response=keywords,credits,external_ids&language=en-US`;
-    const res = await fetch(url, { headers: { Accept: 'application/json' } });
+    const data: TMDBRawMovie = await tmdbFetch<TMDBRawMovie>(url);
 
-    if (!res.ok) {
-      return null;
-    }
-
-    const data: TMDBRawMovie = await res.json();
     const director = data.credits?.crew?.find((c) => c.job === 'Director')?.name;
     const keywords = (data.keywords?.keywords || []).map((k) => k.name);
     const imdbId = data.external_ids?.imdb_id;
@@ -138,10 +131,7 @@ export async function resolveKeywordIds(terms: string[], customKey?: string): Pr
         const url = `${TMDB_BASE_URL}/search/keyword?api_key=${apiKey}&query=${encodeURIComponent(
           term.trim()
         )}&page=1`;
-        const res = await fetch(url, { headers: { Accept: 'application/json' } });
-        if (!res.ok) return;
-
-        const data = await res.json();
+        const data = await tmdbFetch<any>(url);
         const results = (data.results || []) as Array<{ id: number; name: string }>;
         for (const item of results.slice(0, 2)) {
           keywordIdSet.add(item.id);
@@ -211,10 +201,7 @@ export async function queryDiscoverByKeywords(
       url.searchParams.set(key, value);
     }
 
-    const res = await fetch(url.toString(), { headers: { Accept: 'application/json' } });
-    if (!res.ok) return [];
-
-    const data = await res.json();
+    const data = await tmdbFetch<any>(url.toString());
     return (data.results || []) as TMDBRawMovie[];
   } catch (e) {
     console.error('[TMDB] Discover by keywords error:', e);
@@ -235,7 +222,6 @@ export async function queryRecommendationsAndSimilar(
   const apiKey = getTmdbApiKey(customKey);
   if (!apiKey) return [];
 
-  const headers = { Accept: 'application/json' };
   const urls = [
     `${TMDB_BASE_URL}/movie/${movieId}/recommendations?api_key=${apiKey}&language=en-US&page=1`,
     `${TMDB_BASE_URL}/movie/${movieId}/similar?api_key=${apiKey}&language=en-US&page=1`,
@@ -243,7 +229,7 @@ export async function queryRecommendationsAndSimilar(
 
   try {
     const responses = await Promise.all(
-      urls.map((u) => fetch(u, { headers }).then((r) => (r.ok ? r.json() : { results: [] })))
+      urls.map((u) => tmdbFetch<any>(u).catch(() => ({ results: [] })))
     );
 
     const merged = new Map<number, TMDBRawMovie>();
@@ -305,10 +291,7 @@ export async function queryDiscoverMovies(
       url.searchParams.set(key, value);
     }
 
-    const res = await fetch(url.toString(), { headers: { Accept: 'application/json' } });
-    if (!res.ok) return [];
-
-    const data = await res.json();
+    const data = await tmdbFetch<any>(url.toString());
     return (data.results || []) as TMDBRawMovie[];
   } catch (e) {
     console.error('[TMDB] Discover error:', e);
@@ -336,14 +319,9 @@ export async function hydrateWinningMovies(
   await Promise.all(
     movieIds.map(async (id) => {
       try {
-        const res = await fetch(
+        const data: TMDBRawMovie = await tmdbFetch<TMDBRawMovie>(
           `${TMDB_BASE_URL}/movie/${id}?api_key=${apiKey}&append_to_response=external_ids,credits&language=en-US`
         );
-        if (!res.ok) {
-          map.set(id, { runtime: 95, posterPath: null });
-          return;
-        }
-        const data: TMDBRawMovie = await res.json();
         const dir = data.credits?.crew?.find((c) => c.job === 'Director')?.name;
         map.set(id, {
           runtime: data.runtime || 95,

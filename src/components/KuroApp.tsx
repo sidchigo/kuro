@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import type { Preset, SeedMovie, HorrorMatch, SeenItem, RecentSeedItem, WatchlistItem, User, TMDBRawMovie } from '../lib/types';
 import { isEmbeddingWorkerSupported, rankMoviesWithWorker, scheduleIdleWarmup } from '../lib/embeddingClient';
 import { createPitch, createCatchWarning } from '../lib/matchFormatters';
-import { TMDB_IMAGE_BASE } from '../lib/tmdb';
+import { TMDB_IMAGE_BASE } from '../lib/constants';
 import LeftColumn from './LeftColumn';
 import SeedFilmSection from './SeedFilmSection';
 import SentenceCanvas, { type SentenceCanvasHandle } from './SentenceCanvas';
