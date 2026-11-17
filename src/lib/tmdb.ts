@@ -143,6 +143,56 @@ export async function fetchRandomHorrorMovie(customKey?: string): Promise<SeedMo
 }
 
 /**
+ * Fetches a buffered batch of random horror movies in a single TMDB discover call (e.g. 15 films)
+ */
+export async function fetchRandomHorrorBatch(count = 15, customKey?: string): Promise<SeedMovie[]> {
+  const apiKey = getTmdbApiKey(customKey);
+  if (!apiKey) {
+    console.warn('[TMDB] TMDB_API_KEY is not configured.');
+    return [];
+  }
+
+  try {
+    const randomPage = Math.floor(Math.random() * 40) + 1;
+    const discoverUrl = `${TMDB_BASE_URL}/discover/movie?api_key=${apiKey}&with_genres=27&vote_count.gte=50&vote_average.gte=4.5&sort_by=popularity.desc&page=${randomPage}`;
+    const data = await tmdbFetch<any>(discoverUrl);
+    const results = (data.results || []) as Array<{
+      id: number;
+      title: string;
+      original_title?: string;
+      release_date?: string;
+      original_language?: string;
+      overview?: string;
+      poster_path?: string | null;
+      backdrop_path?: string | null;
+      vote_average?: number;
+      genre_ids?: number[];
+    }>;
+
+    return results
+      .filter((m) => m.poster_path && (!m.genre_ids || m.genre_ids.includes(27)))
+      .slice(0, count)
+      .map((m) => ({
+        id: m.id,
+        title: m.title,
+        originalTitle: m.original_title !== m.title ? m.original_title : undefined,
+        year: m.release_date ? parseInt(m.release_date.split('-')[0], 10) : 0,
+        originalLanguage: m.original_language?.toUpperCase() || 'EN',
+        runtime: 90,
+        director: 'Unknown',
+        overview: m.overview || 'No synopsis recorded.',
+        posterUrl: m.poster_path ? `${TMDB_IMAGE_BASE}${m.poster_path}` : undefined,
+        voteAverage: m.vote_average ? Math.round(m.vote_average * 10) / 10 : 7.0,
+        genres: ['Horror'],
+        keywords: ['horror', 'supernatural'],
+      }));
+  } catch (error) {
+    console.error('[TMDB] Random horror batch fetch error:', error);
+    return [];
+  }
+}
+
+/**
  * Parallel lookup: resolve text terms to TMDB keyword IDs.
  */
 export async function resolveKeywordIds(terms: string[], customKey?: string): Promise<number[]> {

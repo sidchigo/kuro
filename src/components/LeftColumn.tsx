@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import type { SeedMovie } from '../lib/types';
 import PosterImage from './PosterImage';
 
@@ -19,23 +19,60 @@ export default function LeftColumn({
   isInWatchlist = false,
   isSeen = false,
 }: LeftColumnProps) {
-  const [isRolling, setIsRolling] = useState(false);
+  const [randomQueue, setRandomQueue] = useState<SeedMovie[]>([]);
+  const isFetchingBatchRef = useRef(false);
 
-  const handleRandomRoll = async () => {
-    if (!onSelectSeed || isRolling) return;
-    setIsRolling(true);
+  // Background buffer fetcher: fetches 15 movies in 1 single TMDB call
+  const fetchBatch = useCallback(async () => {
+    if (isFetchingBatchRef.current) return;
+    isFetchingBatchRef.current = true;
     try {
-      const res = await fetch('/api/random');
+      const res = await fetch('/api/random?batch=true&count=15');
       if (res.ok) {
         const data = await res.json();
-        if (data.movie) {
-          onSelectSeed(data.movie.id, data.movie);
+        if (data.movies && Array.isArray(data.movies) && data.movies.length > 0) {
+          setRandomQueue((prev) => [...prev, ...data.movies]);
         }
       }
-    } catch (err) {
-      console.error('[LeftColumn] Random horror roll failed:', err);
+    } catch (e) {
+      console.warn('[LeftColumn] Pre-fetch random horror batch error:', e);
     } finally {
-      setIsRolling(false);
+      isFetchingBatchRef.current = false;
+    }
+  }, []);
+
+  // Pre-fetch 15 random horror movies on page load
+  useEffect(() => {
+    fetchBatch();
+  }, [fetchBatch]);
+
+  const handleRandomRoll = async () => {
+    if (!onSelectSeed) return;
+
+    // Watermark refill: when queue drops to 5 or fewer, silently fetch the next batch of 15
+    if (randomQueue.length <= 5) {
+      fetchBatch();
+    }
+
+    if (randomQueue.length > 0) {
+      // Instant 0ms roll from pre-fetched buffer
+      const [nextMovie, ...remaining] = randomQueue;
+      setRandomQueue(remaining);
+      onSelectSeed(nextMovie.id, nextMovie);
+    } else {
+      // Fallback if queue empty before initial fetch completed
+      try {
+        const res = await fetch('/api/random');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.movie) {
+            onSelectSeed(data.movie.id, data.movie);
+          }
+        }
+      } catch (err) {
+        console.error('[LeftColumn] Random horror roll failed:', err);
+      }
+      fetchBatch();
     }
   };
 
@@ -127,14 +164,13 @@ export default function LeftColumn({
         <button
           type="button"
           onClick={handleRandomRoll}
-          disabled={isRolling}
-          className="w-full py-2.5 px-3 border border-[#262629] bg-[#0A0A0B] hover:border-[#E62E25] hover:bg-[#121214] disabled:opacity-50 transition-all font-mono text-[10px] uppercase text-[#F2EFE9] flex items-center justify-between group"
+          className="w-full py-2.5 px-3 border border-[#262629] bg-[#0A0A0B] hover:border-[#E62E25] hover:bg-[#121214] transition-all font-mono text-[10px] uppercase text-[#F2EFE9] flex items-center justify-between group"
         >
           <span className="group-hover:text-[#E62E25] transition-colors">
-            {isRolling ? '[DISCOVERING...]' : '[RANDOM HORROR FILM]'}
+            [RANDOM HORROR FILM]
           </span>
           <span className="text-[#8A8882] text-[9px] group-hover:text-[#F2EFE9]">
-            {isRolling ? '···' : 'ROLL →'}
+            ROLL →
           </span>
         </button>
       </div>
