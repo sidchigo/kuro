@@ -1,3 +1,4 @@
+import { env } from '$env/dynamic/private';
 import { drizzle } from 'drizzle-orm/libsql';
 import { createClient } from '@libsql/client';
 import fs from 'node:fs';
@@ -7,16 +8,16 @@ import * as schema from './schema';
 import { users } from './schema';
 import { count } from 'drizzle-orm';
 
+const rawDatabaseUrl = env.DATABASE_URL || process.env.DATABASE_URL || '';
 const isRemoteDb =
-  typeof process.env.DATABASE_URL === 'string' &&
-  (process.env.DATABASE_URL.startsWith('libsql://') ||
-    process.env.DATABASE_URL.startsWith('http://') ||
-    process.env.DATABASE_URL.startsWith('https://'));
+rawDatabaseUrl.startsWith('libsql://') ||
+  rawDatabaseUrl.startsWith('http://') ||
+  rawDatabaseUrl.startsWith('https://');
 
-let dbUrl: string = process.env.DATABASE_URL || '';
+let dbUrl: string = rawDatabaseUrl;
 
 if (!isRemoteDb && !dbUrl) {
-  const isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
+  const isServerless = Boolean(env.VERCEL || process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
   const dataDir = isServerless ? '/tmp' : path.resolve(process.cwd(), 'data');
   try {
     if (!fs.existsSync(dataDir)) {
@@ -28,7 +29,7 @@ if (!isRemoteDb && !dbUrl) {
   dbUrl = `file:${path.join(dataDir, 'kuro.db')}`;
 }
 
-const authToken = process.env.DATABASE_AUTH_TOKEN;
+const authToken = env.DATABASE_AUTH_TOKEN || process.env.DATABASE_AUTH_TOKEN;
 
 export const client = createClient({
   url: dbUrl,
@@ -123,7 +124,7 @@ export async function ensureDbInitialized() {
     // Seed default Admin if no users exist
     const userCount = await db.select({ value: count() }).from(users);
     if ((userCount[0]?.value ?? 0) === 0) {
-      const initialPass = process.env.INITIAL_ADMIN_PASSWORD || 'kuroadmin123';
+      const initialPass = env.INITIAL_ADMIN_PASSWORD || process.env.INITIAL_ADMIN_PASSWORD || 'kuroadmin123';
       const salt = crypto.randomBytes(16).toString('hex');
       const hash = crypto.scryptSync(initialPass, salt, 64).toString('hex');
       const now = Date.now();

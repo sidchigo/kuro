@@ -1,3 +1,4 @@
+import { env } from '$env/dynamic/private';
 import type { Preset, SeedMovie, MovieSearchResult, TMDBRawMovie } from './types';
 import { TMDB_IMAGE_BASE } from './constants';
 import { tmdbFetch } from './tmdbFetch';
@@ -11,7 +12,7 @@ export function getTmdbApiKey(customKey?: string): string | undefined {
     return customKey.trim();
   }
   return (
-    (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.TMDB_API_KEY) ||
+    env.TMDB_API_KEY ||
     (typeof process !== 'undefined' && process.env && process.env.TMDB_API_KEY) ||
     undefined
   );

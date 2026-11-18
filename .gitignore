@@ -2,10 +2,11 @@
 node_modules/
 
 # Production build output
+build/
 dist/
 
-# Astro cache & generated types
-.astro/
+# SvelteKit cache & generated types
+.svelte-kit/
 
 # Environment files
 .env

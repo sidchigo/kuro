@@ -4,38 +4,35 @@
   "type": "module",
   "description": "kuro. — Deterministic horror movie discovery engine with a neo-brutalist Japanese editorial grid",
   "scripts": {
-    "dev": "astro dev",
-    "start": "node ./dist/server/entry.mjs",
-    "build": "astro build",
-    "preview": "astro preview",
-    "astro": "astro",
-    "check": "astro check",
+    "dev": "vite dev",
+    "build": "vite build",
+    "preview": "vite preview",
+    "start": "node build",
+    "prepare": "svelte-kit sync || echo ''",
+    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+    "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
-    "@astrojs/node": "^9.5.5",
-    "@astrojs/react": "^4.2.1",
-    "@astrojs/tailwind": "^5.1.5",
-    "@astrojs/vercel": "^8.0.6",
     "@huggingface/transformers": "^4.3.2",
     "@libsql/client": "^0.18.0",
-    "astro": "^5.4.1",
     "drizzle-orm": "^0.45.4",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
     "zod": "^3.24.2"
   },
   "devDependencies": {
-    "@astrojs/check": "^0.9.12",
-    "@types/node": "^26.6.6",
-    "@types/react": "^19.0.10",
-    "@types/react-dom": "^19.0.4",
+    "@sveltejs/adapter-node": "^5.2.12",
+    "@sveltejs/adapter-vercel": "^5.6.3",
+    "@sveltejs/kit": "^2.19.0",
+    "@sveltejs/vite-plugin-svelte": "^5.0.3",
+    "@types/node": "^22.10.0",
     "autoprefixer": "^10.4.20",
     "drizzle-kit": "^0.31.11",
     "postcss": "^8.5.2",
+    "svelte": "^5.25.0",
+    "svelte-check": "^4.1.4",
     "tailwindcss": "^3.4.17",
-    "typescript": "^5.7.3"
+    "vite": "^6.2.0"
   }
 }

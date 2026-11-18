@@ -7,8 +7,8 @@
 
 ## Architecture
 
-- **Framework**: Astro 5 (Hybrid SSR via `@astrojs/vercel`)
-- **UI & Islands**: React 19, Tailwind CSS (Razor-sharp borders, zero rounded corners, zero dropshadows)
+- **Framework**: SvelteKit 2 (SSR + API routes via `@sveltejs/adapter-node` and `@sveltejs/adapter-vercel`)
+- **UI**: Svelte 5 (Runes), Tailwind CSS (Razor-sharp borders, zero rounded corners, zero dropshadows)
 - **Typography**: Instrument Serif, IBM Plex Mono, Inter
 - **Discovery Pipeline**:
   1. **Intent Decomposition**: Deconstructs seed movie and 140-character pitch into core horror mechanics, TMDB keyword terms, and regional constraints.
