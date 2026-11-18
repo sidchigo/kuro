@@ -5,7 +5,24 @@ import { eq, and, gt } from 'drizzle-orm';
 import type { User, Role } from './types';
 
 const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
-const COOKIE_NAME = 'kuro_session';
+export const COOKIE_NAME = 'kuro_session';
+
+export function getSessionCookieOptions(expiresAt: number, request?: Request, url?: URL) {
+  const maxAge = Math.max(0, Math.floor((expiresAt - Date.now()) / 1000));
+  const isHttps =
+    url?.protocol === 'https:' ||
+    (request
+      ? request.url.startsWith('https://') || request.headers.get('x-forwarded-proto') === 'https'
+      : false);
+  return {
+    path: '/',
+    httpOnly: true,
+    sameSite: 'lax' as const,
+    secure: isHttps,
+    maxAge,
+    expires: new Date(expiresAt),
+  };
+}
 
 export function hashPassword(password: string): { hash: string; salt: string } {
   const salt = crypto.randomBytes(16).toString('hex');
@@ -91,9 +108,8 @@ export function createSessionCookieHeader(token: string, expiresAt: number, requ
   const isHttps = request
     ? request.url.startsWith('https://') || request.headers.get('x-forwarded-proto') === 'https'
     : false;
-  return `${COOKIE_NAME}=${encodeURIComponent(token)}; Path=/; Max-Age=${maxAgeSeconds}; Expires=${expiresDate}; HttpOnly; SameSite=Lax${
-    isHttps ? '; Secure' : ''
-  }`;
+  return `${COOKIE_NAME}=${encodeURIComponent(token)}; Path=/; Max-Age=${maxAgeSeconds}; Expires=${expiresDate}; HttpOnly; SameSite=Lax${isHttps ? '; Secure' : ''
+    }`;
 }
 
 export function createClearCookieHeader(): string {
