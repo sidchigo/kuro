@@ -37,7 +37,7 @@
     <!-- Fallback Notice if any -->
     {#if discoveryResults.fallbackReason}
       <div
-        class="p-3 border-b border-[#262629] bg-[#0A0A0B] flex items-center justify-between font-mono text-[10px] text-[#E62E25] uppercase tracking-widest"
+        class="p-3 border-b border-[#262629] bg-[#0A0A0B] flex items-center justify-between font-mono text-[10px] text-accent uppercase tracking-widest"
       >
         <span>{discoveryResults.fallbackReason}</span>
       </div>
@@ -87,7 +87,7 @@
                 <p class="font-mono text-[10px] text-[#8A8882] uppercase tracking-wider mt-0.5">
                   {movie.year || '----'} · [{movie.originalLanguage}] · {movie.runtime} MIN
                   {#if typeof movie.similarity === 'number'}
-                    <span class="ml-2 text-[#E62E25] font-bold">
+                    <span class="ml-2 text-accent font-bold">
                       · {Math.round(movie.similarity * 100)}% MATCH
                     </span>
                   {/if}
@@ -95,8 +95,8 @@
 
                 <!-- Zero-LLM "Why Recommended" Semantic Trope-Anchor Badge -->
                 {#if movie.explanation}
-                  <div class="mt-2 py-1 px-2 border-l-2 border-[#E62E25] bg-[#121214] font-mono text-[10px]">
-                    <span class="text-[#E62E25] font-bold mr-1.5 uppercase">WHY:</span>
+                  <div class="mt-2 py-1 px-2 border-l-2 border-accent bg-[#121214] font-mono text-[10px]">
+                    <span class="text-accent font-bold mr-1.5 uppercase">WHY:</span>
                     <span class="text-[#F2EFE9]/90">{movie.explanation}</span>
                   </div>
                 {/if}
@@ -147,7 +147,7 @@
                     type="button"
                     onclick={() => onToggleWatchlist(movie)}
                     class="border px-2 py-0.5 uppercase transition-colors text-[9px] {inWatchlist
-                      ? 'border-[#E62E25] text-[#E62E25] bg-[#E62E25]/10 hover:bg-[#E62E25] hover:text-[#0A0A0B]'
+                      ? 'border-accent text-accent bg-accent/10 hover:bg-accent hover:text-[#0A0A0B]'
                       : 'border-[#262629] text-[#8A8882] hover:text-[#F2EFE9] hover:border-[#F2EFE9]'}"
                   >
                     {inWatchlist ? '[PLAN ✓]' : '[+ PLAN]'}
@@ -163,8 +163,8 @@
                     type="button"
                     onclick={() => onMarkSeen(movie)}
                     class="border px-2 py-0.5 uppercase transition-colors text-[9px] {isSeen
-                      ? 'border-[#E62E25] text-[#E62E25] bg-[#E62E25]/10 hover:bg-[#E62E25] hover:text-[#0A0A0B]'
-                      : 'border-[#262629] text-[#8A8882] hover:text-[#E62E25] hover:border-[#E62E25]'}"
+                      ? 'border-accent text-accent bg-accent/10 hover:bg-accent hover:text-[#0A0A0B]'
+                      : 'border-[#262629] text-[#8A8882] hover:text-accent hover:border-accent'}"
                   >
                     {isSeen ? '[SEEN ✓]' : '[MARK SEEN]'}
                   </button>

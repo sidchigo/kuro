@@ -56,6 +56,8 @@ export async function ensureDbInitialized() {
         password_hash TEXT,
         salt TEXT,
         role TEXT NOT NULL CHECK (role IN ('admin', 'member')) DEFAULT 'member',
+        theme_preference TEXT DEFAULT 'crimson',
+        custom_color TEXT,
         created_at INTEGER NOT NULL
       );
       CREATE TABLE IF NOT EXISTS sessions (
@@ -129,6 +131,8 @@ export async function ensureDbInitialized() {
       'ALTER TABLE users ADD COLUMN email TEXT',
       'ALTER TABLE users ADD COLUMN google_id TEXT',
       'ALTER TABLE users ADD COLUMN avatar_url TEXT',
+      "ALTER TABLE users ADD COLUMN theme_preference TEXT DEFAULT 'crimson'",
+      'ALTER TABLE users ADD COLUMN custom_color TEXT',
     ];
     for (const statement of migrations) {
       try {

@@ -7,7 +7,8 @@ export default {
         canvas: '#0A0A0B',
         bone: '#F2EFE9',
         ash: '#8A8882',
-        vermilion: '#E62E25',
+        vermilion: 'rgb(var(--accent-rgb, 230 46 37) / <alpha-value>)',
+        accent: 'rgb(var(--accent-rgb, 230 46 37) / <alpha-value>)',
         hairline: '#262629',
       },
       fontFamily: {

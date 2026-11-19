@@ -144,7 +144,7 @@
               </div>
               <div class="min-w-0 flex-1">
                 <p
-                  class="font-serif text-base text-[#F2EFE9] group-hover:text-[#E62E25] truncate transition-colors leading-tight"
+                  class="font-serif text-base text-[#F2EFE9] group-hover:text-accent truncate transition-colors leading-tight"
                 >
                   {item.title}
                 </p>
@@ -192,7 +192,7 @@
           <button
             type="button"
             onclick={onClearSeed}
-            class="font-mono text-[10px] text-[#8A8882] hover:text-[#E62E25] border border-[#262629] hover:border-[#E62E25] px-1.5 py-0.5 shrink-0 transition-colors"
+            class="font-mono text-[10px] text-[#8A8882] hover:text-accent border border-[#262629] hover:border-accent px-1.5 py-0.5 shrink-0 transition-colors"
           >
             [CHANGE]
           </button>
@@ -222,7 +222,7 @@
                 type="button"
                 onclick={() => onToggleWatchlist(selectedSeed)}
                 class="border px-2 py-0.5 uppercase transition-colors {isInWatchlist
-                  ? 'border-[#E62E25] text-[#E62E25] bg-[#E62E25]/10 hover:bg-[#E62E25] hover:text-[#0A0A0B]'
+                  ? 'border-accent text-accent bg-accent/10 hover:bg-accent hover:text-[#0A0A0B]'
                   : 'border-[#262629] text-[#8A8882] hover:text-[#F2EFE9] hover:border-[#F2EFE9]'}"
               >
                 {isInWatchlist ? '[PLAN ✓]' : '[+ PLAN]'}
@@ -233,8 +233,8 @@
                 type="button"
                 onclick={() => onMarkSeen(selectedSeed)}
                 class="border px-2 py-0.5 uppercase transition-colors {isSeen
-                  ? 'border-[#E62E25] text-[#E62E25] bg-[#E62E25]/10'
-                  : 'border-[#262629] text-[#8A8882] hover:text-[#E62E25] hover:border-[#E62E25]'}"
+                  ? 'border-accent text-accent bg-accent/10'
+                  : 'border-[#262629] text-[#8A8882] hover:text-accent hover:border-accent'}"
               >
                 {isSeen ? '[SEEN ✓]' : '[MARK SEEN]'}
               </button>

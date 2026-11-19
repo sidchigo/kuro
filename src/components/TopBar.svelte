@@ -26,7 +26,7 @@
   <span
     class="font-serif text-2xl font-normal tracking-tight text-[#F2EFE9] lg:hidden"
   >
-    kuro<span class="text-[#E62E25]">.</span>
+    kuro<span class="text-accent" style="color: var(--accent);">.</span>
   </span>
 
   <!-- User & RBAC Controls -->
@@ -36,7 +36,7 @@
       <button
         type="button"
         onclick={() => onToggleMobileDrawer("plan")}
-        class="lg:hidden border border-[#262629] px-2 py-0.5 text-[#E62E25] hover:border-[#E62E25] transition-colors"
+        class="lg:hidden border border-[#262629] px-2 py-0.5 text-accent hover:border-accent transition-colors"
       >
         PLAN [{watchlistCount}]
       </button>
@@ -62,7 +62,7 @@
       <button
         type="button"
         onclick={onLogout}
-        class="border border-[#262629] px-2 py-0.5 text-[#8A8882] hover:text-[#E62E25] hover:border-[#E62E25] uppercase transition-colors"
+        class="border border-[#262629] px-2 py-0.5 text-[#8A8882] hover:text-accent hover:border-accent uppercase transition-colors"
         title="Logout"
       >
         [LOGOUT]

@@ -42,7 +42,7 @@
         <button
           type="button"
           onclick={onClose}
-          class="font-mono text-xs text-[#8A8882] hover:text-[#E62E25] transition-colors"
+          class="font-mono text-xs text-[#8A8882] hover:text-accent transition-colors"
         >
           ✕ CLOSE
         </button>
@@ -50,7 +50,7 @@
 
       <!-- Icon & Information -->
       <div class="text-center py-2 space-y-3">
-        <span class="font-serif text-5xl text-[#E62E25] leading-none select-none">黒</span>
+        <span class="font-serif text-5xl text-accent leading-none select-none">黒</span>
         <h3 class="font-serif text-2xl text-[#F2EFE9]">AUTHENTICATE</h3>
         <p class="font-mono text-[11px] text-[#8A8882] uppercase tracking-wider leading-relaxed">
           Sign in to preserve your persistent Plan to Watch list, Already Seen blacklist, and 5-star ratings across devices.
@@ -59,7 +59,7 @@
 
       <!-- Error Alert -->
       {#if localError}
-        <div class="my-4 p-3 border border-[#E62E25] bg-[#E62E25]/10 font-mono text-[11px] text-[#E62E25] flex items-start justify-between gap-2">
+        <div class="my-4 p-3 border border-accent bg-accent/10 font-mono text-[11px] text-accent flex items-start justify-between gap-2">
           <span>{localError}</span>
           <button
             type="button"

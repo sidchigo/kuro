@@ -39,6 +39,9 @@ export const POST: RequestHandler = async ({ request, cookies, url }) => {
       .select({
         id: users.id,
         username: users.username,
+        email: users.email,
+        themePreference: users.themePreference,
+        customColor: users.customColor,
         passwordHash: users.passwordHash,
         salt: users.salt,
         role: users.role,
@@ -78,6 +81,9 @@ export const POST: RequestHandler = async ({ request, cookies, url }) => {
     const user: User = {
       id: row.id,
       username: row.username,
+      email: row.email ?? undefined,
+      themePreference: row.themePreference ?? 'crimson',
+      customColor: row.customColor ?? undefined,
       role: row.role as Role,
       createdAt: row.createdAt,
     };

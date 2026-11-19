@@ -27,7 +27,8 @@
 </script>
 
 <section
-  class="sentence-canvas-section p-6 bg-[#E62E25] text-[#0A0A0B] border-b border-[#262629] selection:bg-white selection:text-black"
+  class="sentence-canvas-section p-6 bg-accent text-[#0A0A0B] border-b border-[#262629] selection:bg-white selection:text-black"
+  style="background-color: var(--accent);"
 >
   <!-- Top Row: Title & Counter -->
   <div class="flex items-center justify-between mb-2">

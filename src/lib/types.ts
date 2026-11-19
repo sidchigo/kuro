@@ -2,12 +2,17 @@ export type Preset = 'all' | 'cult' | 'foreign';
 
 export type Role = 'admin' | 'member';
 
+export type StockThemeId = 'crimson' | 'amber' | 'acid';
+export type ThemeId = StockThemeId | 'custom';
+
 export interface User {
   id: number;
   username: string;
   email?: string;
   avatarUrl?: string;
   role: Role;
+  themePreference?: string;
+  customColor?: string;
   createdAt: number;
 }
 

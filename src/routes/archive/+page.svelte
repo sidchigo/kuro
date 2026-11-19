@@ -60,7 +60,7 @@
 </script>
 
 <svelte:head>
-  <title>kuro. // Dedicated Archive</title>
+  <title>kuro. // Archive</title>
   <meta name="description" content="Your complete horror archive, watchlist, and custom ratings." />
 </svelte:head>
 
@@ -72,10 +72,10 @@
     <div class="flex items-center gap-6 min-w-0">
       <div class="flex items-baseline gap-2 shrink-0">
         <a href="/" class="font-serif text-2xl font-normal text-[#F2EFE9] hover:opacity-80 transition-opacity">
-          kuro<span class="text-[#E62E25]">.</span>
+          kuro<span class="text-accent" style="color: var(--accent);">.</span>
         </a>
         <span class="font-mono text-xs uppercase text-[#8A8882] tracking-widest hidden sm:inline">
-          // DEDICATED ARCHIVE
+          // ARCHIVE
         </span>
       </div>
 
@@ -136,7 +136,7 @@
 
       <a
         href="/"
-        class="h-9 inline-flex items-center font-mono text-xs uppercase px-3 border border-[#262629] hover:border-[#E62E25] hover:text-[#E62E25] text-[#F2EFE9] transition-colors gap-1.5"
+        class="h-9 inline-flex items-center font-mono text-xs uppercase px-3 border border-[#262629] hover:border-accent hover:text-accent text-[#F2EFE9] transition-colors gap-1.5"
       >
         <span>[← ENGINE]</span>
       </a>
@@ -184,10 +184,7 @@
         <div>
           <div class="flex items-baseline justify-between mb-6 pb-2 border-b border-[#262629]">
             <span class="font-mono text-xs uppercase tracking-widest text-[#8A8882]">
-              PLAN TO WATCH // {filteredWatchlist.length} {filteredWatchlist.length === 1 ? 'FILM' : 'FILMS'} SAVED
-            </span>
-            <span class="font-mono text-[10px] uppercase text-[#8A8882]">
-              UNRESTRICTED POSTER GRID
+              PLAN TO WATCH // {filteredWatchlist.length} {filteredWatchlist.length === 1 ? 'ENTRY' : 'ENTRIES'}
             </span>
           </div>
 
@@ -218,7 +215,7 @@
                     <button
                       type="button"
                       onclick={() => library.removeFromWatchlist(item.id)}
-                      class="absolute top-1.5 right-1.5 w-6 h-6 bg-[#0A0A0B]/80 hover:bg-[#E62E25] hover:text-[#0A0A0B] text-[#F2EFE9] border border-[#262629] flex items-center justify-center font-mono text-xs transition-colors"
+                      class="absolute top-1.5 right-1.5 w-6 h-6 bg-[#0A0A0B]/80 hover:bg-accent hover:text-[#0A0A0B] text-[#F2EFE9] border border-[#262629] flex items-center justify-center font-mono text-xs transition-colors"
                       title="Remove from watchlist"
                     >
                       ✕
@@ -248,7 +245,7 @@
                       <button
                         type="button"
                         onclick={() => library.toggleSeen(item)}
-                        class="py-1 border border-[#262629] hover:border-[#E62E25] hover:text-[#E62E25] text-[#8A8882] text-center transition-colors"
+                        class="py-1 border border-[#262629] hover:border-accent hover:text-accent text-[#8A8882] text-center transition-colors"
                       >
                         [SEEN]
                       </button>
@@ -266,7 +263,7 @@
         <div>
           <div class="flex items-baseline justify-between mb-6 pb-2 border-b border-[#262629]">
             <span class="font-mono text-xs uppercase tracking-widest text-[#8A8882]">
-              ALREADY SEEN // {filteredSeenList.length} {filteredSeenList.length === 1 ? 'FILM' : 'FILMS'} LOGGED
+              ALREADY SEEN // {filteredSeenList.length} {filteredSeenList.length === 1 ? 'ENTRY' : 'ENTRIES'}
             </span>
             {#if library.seenList.length > 0}
               <button
@@ -276,7 +273,7 @@
                     library.clearSeen();
                   }
                 }}
-                class="font-mono text-[10px] uppercase text-[#8A8882] hover:text-[#E62E25] transition-colors"
+                class="font-mono text-[10px] uppercase text-[#8A8882] hover:text-accent transition-colors"
               >
                 [CLEAR ALL SEEN]
               </button>
@@ -308,7 +305,7 @@
                     <button
                       type="button"
                       onclick={() => library.undoSeen(item.id)}
-                      class="absolute top-1.5 right-1.5 w-6 h-6 bg-[#0A0A0B]/80 hover:bg-[#E62E25] hover:text-[#0A0A0B] text-[#F2EFE9] border border-[#262629] flex items-center justify-center font-mono text-xs transition-colors"
+                      class="absolute top-1.5 right-1.5 w-6 h-6 bg-[#0A0A0B]/80 hover:bg-accent hover:text-[#0A0A0B] text-[#F2EFE9] border border-[#262629] flex items-center justify-center font-mono text-xs transition-colors"
                       title="Remove from seen blacklist"
                     >
                       ✕
@@ -335,7 +332,7 @@
                               type="button"
                               onclick={() => library.rateSeen(item.id, star)}
                               class="text-xs transition-colors hover:scale-125 {(item.rating || 0) >= star
-                                ? 'text-[#E62E25]'
+                                ? 'text-accent'
                                 : 'text-[#262629] hover:text-[#8A8882]'}"
                             >
                               ★
@@ -365,7 +362,7 @@
         <div>
           <div class="flex items-baseline justify-between mb-6 pb-2 border-b border-[#262629]">
             <span class="font-mono text-xs uppercase tracking-widest text-[#8A8882]">
-              RECENT SEARCHES // {filteredRecentSeeds.length} ENTRIES RECORDED
+              RECENT SEARCHES // {filteredRecentSeeds.length} {filteredRecentSeeds.length === 1 ? 'ENTRY' : 'ENTRIES'}
             </span>
           </div>
 
@@ -392,7 +389,7 @@
                     </div>
                     {#if seed.sentence}
                       <p
-                        class="font-serif italic text-xs text-[#8A8882] mt-2.5 border-l-2 border-[#E62E25] pl-2 line-clamp-2"
+                        class="font-serif italic text-xs text-[#8A8882] mt-2.5 border-l-2 border-accent pl-2 line-clamp-2"
                       >
                         "{seed.sentence}"
                       </p>
@@ -402,7 +399,7 @@
                   <button
                     type="button"
                     onclick={() => handleRestoreRecent(seed.id, seed.sentence)}
-                    class="w-full mt-4 py-1.5 border border-[#262629] hover:border-[#E62E25] hover:text-[#E62E25] text-[#F2EFE9] font-mono text-[10px] uppercase text-center transition-colors"
+                    class="w-full mt-4 py-1.5 border border-[#262629] hover:border-accent hover:text-accent text-[#F2EFE9] font-mono text-[10px] uppercase text-center transition-colors"
                   >
                     RESTORE QUERY →
                   </button>

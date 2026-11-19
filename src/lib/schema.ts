@@ -9,6 +9,8 @@ export const users = sqliteTable('users', {
   passwordHash: text('password_hash'),
   salt: text('salt'),
   role: text('role', { enum: ['admin', 'member'] }).notNull().default('member'),
+  themePreference: text('theme_preference').default('crimson'),
+  customColor: text('custom_color'),
   createdAt: integer('created_at').notNull(),
 });
 

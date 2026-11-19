@@ -1,8 +1,18 @@
 <script lang="ts">
   import '../styles/global.css';
-  import type { Snippet } from 'svelte';
+  import { onMount, type Snippet } from 'svelte';
+  import { themeStore } from '$lib/stores/theme.svelte';
+  import type { LayoutData } from './$types';
 
-  let { children }: { children: Snippet } = $props();
+  let { data, children }: { data: LayoutData; children: Snippet } = $props();
+
+  $effect(() => {
+    themeStore.syncUser(data.user);
+  });
+
+  onMount(() => {
+    themeStore.init(data.user);
+  });
 </script>
 
 {@render children()}

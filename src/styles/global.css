@@ -2,6 +2,26 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --accent: #E62E25;
+  --accent-rgb: 230 46 37;
+}
+
+[data-theme="crimson"] {
+  --accent: #E62E25;
+  --accent-rgb: 230 46 37;
+}
+
+[data-theme="amber"] {
+  --accent: #FF6B00;
+  --accent-rgb: 255 107 0;
+}
+
+[data-theme="acid"] {
+  --accent: #00E676;
+  --accent-rgb: 0 230 118;
+}
+
 @layer base {
   *,
   *::before,
@@ -38,12 +58,12 @@
   }
 
   ::selection {
-    background: #E62E25;
+    background: var(--accent);
     color: #0A0A0B;
   }
 }
 
-/* High-contrast stark white selection inside the red sentence canvas */
+/* High-contrast stark white selection inside the vibrant sentence canvas */
 textarea.sentence-canvas-textarea::selection,
 .sentence-canvas-textarea::selection,
 .sentence-canvas-textarea::-moz-selection,
@@ -54,4 +74,66 @@ textarea.sentence-canvas-textarea::selection,
   background-color: #ffffff !important;
   color: #000000 !important;
   -webkit-text-fill-color: #000000 !important;
+}
+
+/* 
+  Direct Accent Theme Rules & Fallbacks
+  Guarantees theme colors apply across all elements, whether styled via
+  Tailwind utility classes, CSS variables, or legacy color class names.
+*/
+.text-accent,
+.text-\[\#E62E25\] {
+  color: var(--accent) !important;
+}
+
+.bg-accent,
+.bg-\[\#E62E25\] {
+  background-color: var(--accent) !important;
+}
+
+.border-accent,
+.border-\[\#E62E25\] {
+  border-color: var(--accent) !important;
+}
+
+.border-l-accent,
+.border-l-\[\#E62E25\],
+.border-l-2.border-accent,
+.border-l-2.border-\[\#E62E25\] {
+  border-left-color: var(--accent) !important;
+}
+
+.hover\:text-accent:hover,
+.hover\:text-\[\#E62E25\]:hover {
+  color: var(--accent) !important;
+}
+
+.hover\:border-accent:hover,
+.hover\:border-\[\#E62E25\]:hover {
+  border-color: var(--accent) !important;
+}
+
+.hover\:bg-accent:hover,
+.hover\:bg-\[\#E62E25\]:hover {
+  background-color: var(--accent) !important;
+}
+
+.group:hover .group-hover\:text-accent,
+.group:hover .group-hover\:text-\[\#E62E25\] {
+  color: var(--accent) !important;
+}
+
+.bg-accent\/10,
+.bg-\[\#E62E25\]\/10 {
+  background-color: rgb(var(--accent-rgb) / 0.1) !important;
+}
+
+.bg-accent\/20,
+.bg-\[\#E62E25\]\/20 {
+  background-color: rgb(var(--accent-rgb) / 0.2) !important;
+}
+
+.border-accent\/50,
+.border-\[\#E62E25\]\/50 {
+  border-color: rgb(var(--accent-rgb) / 0.5) !important;
 }
