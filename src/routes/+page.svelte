@@ -9,7 +9,7 @@
   <title>kuro. — Horror Discovery</title>
   <meta
     name="description"
-    content="One film. One sentence. Minimal horror discovery."
+    content="One film. One sentence. Three nightmares."
   />
 </svelte:head>
 
@@ -18,4 +18,7 @@
   initialWatchlist={data.watchlist}
   initialSeenList={data.seenList}
   initialRecentSeeds={data.recentSeeds}
+  authError={data.authError}
+  initialSeedId={data.initialSeedId}
+  initialSentence={data.initialSentence}
 />

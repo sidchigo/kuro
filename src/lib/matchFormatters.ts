@@ -1,4 +1,5 @@
 import type { TMDBRawMovie } from './types';
+import { dotProduct } from './embeddingConfig';
 
 export interface VibeAnchor {
   anchorId: string;
@@ -112,15 +113,6 @@ export const ORIGIN_LANG_MAP: Record<string, string> = {
   ru: 'Russian',
   pl: 'Polish',
 };
-
-function dotProduct(a: Float32Array, b: Float32Array): number {
-  let dot = 0;
-  const len = Math.min(a.length, b.length);
-  for (let i = 0; i < len; i++) {
-    dot += a[i] * b[i];
-  }
-  return dot;
-}
 
 /**
  * Calibrates raw 256-d EmbeddingGemma cosine similarities (typically 0.18 - 0.55)

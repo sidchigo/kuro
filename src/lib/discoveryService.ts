@@ -10,6 +10,7 @@ import {
   getServerVibeAnchors,
 } from './embeddings';
 import { vectorCache } from './vectorCache';
+import { EMBEDDING_CONFIG } from './embeddingConfig';
 import { createPitch, createCatchWarning, generateDeterministicExplanation } from './matchFormatters';
 
 export { createPitch, createCatchWarning };
@@ -198,8 +199,9 @@ export async function processDiscovery(request: DiscoverRequest): Promise<Discov
   scored.sort((a, b) => b.similarity - a.similarity);
 
   // Filter out wildly off-vibe outliers with minimum similarity threshold
-  const MIN_SIMILARITY_THRESHOLD = 0.22;
-  const aboveThreshold = scored.filter((s) => s.similarity >= MIN_SIMILARITY_THRESHOLD);
+  const aboveThreshold = scored.filter(
+    (s) => s.similarity >= EMBEDDING_CONFIG.minSimilarityThreshold
+  );
   const winningScored = (aboveThreshold.length > 0 ? aboveThreshold : scored).slice(0, 3);
 
   // Hydrate external_ids (imdb_id), runtime, and director in parallel

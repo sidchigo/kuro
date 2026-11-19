@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { WatchlistItem, RecentSeedItem, SeenItem, User } from '$lib/types';
   import PosterImage from './PosterImage.svelte';
+  import { themeStore, STOCK_THEMES } from '$lib/stores/theme.svelte';
 
   interface Props {
     currentUser: User | null;
@@ -15,7 +16,6 @@
     onRateSeenMovie: (id: number, rating: number) => void;
     onUndoSeen: (id: number) => void;
     onClearSeen: () => void;
-    onOpenLibrary?: (tab?: 'watchlist' | 'seen' | 'recent') => void;
   }
 
   let {
@@ -31,7 +31,6 @@
     onRateSeenMovie,
     onUndoSeen,
     onClearSeen,
-    onOpenLibrary,
   }: Props = $props();
 </script>
 
@@ -41,17 +40,23 @@
   <div class="space-y-6">
     <!-- Top Header with Unrestricted Library Trigger -->
     <div class="flex items-center justify-between pb-3 border-b border-[#262629]">
-      <span class="font-mono text-xs uppercase tracking-widest text-[#F2EFE9]">
-        MY ARCHIVE
-      </span>
-      {#if currentUser && onOpenLibrary}
-        <button
-          type="button"
-          onclick={() => onOpenLibrary('watchlist')}
-          class="font-mono text-[9px] uppercase text-[#E62E25] hover:text-[#F2EFE9] border border-[#262629] hover:border-[#E62E25] px-2 py-0.5 transition-colors"
+      <div class="flex items-center gap-2">
+        <span class="font-mono text-xs uppercase tracking-widest text-[#F2EFE9]">
+          MY ARCHIVE
+        </span>
+        {#if currentUser}
+          <span class="font-mono text-[9px] text-[#8A8882] select-text">
+            @{currentUser.username}
+          </span>
+        {/if}
+      </div>
+      {#if currentUser}
+        <a
+          href="/archive"
+          class="font-mono text-[9px] uppercase text-accent hover:text-[#F2EFE9] border border-[#262629] hover:border-accent px-2 py-0.5 transition-colors"
         >
-          [FULL VIEW ↗]
-        </button>
+          [EXPAND]
+        </a>
       {/if}
     </div>
 
@@ -61,15 +66,6 @@
         <span class="font-mono text-xs tracking-widest text-[#8A8882] uppercase">
           PLAN TO WATCH {currentUser ? `(${sortedWatchlist.length})` : ''}
         </span>
-        {#if currentUser && onOpenLibrary}
-          <button
-            type="button"
-            onclick={() => onOpenLibrary('watchlist')}
-            class="font-mono text-[9px] uppercase text-[#8A8882] hover:text-[#E62E25] transition-colors"
-          >
-            VIEW ALL ↗
-          </button>
-        {/if}
       </div>
 
       {#if !currentUser}
@@ -80,7 +76,7 @@
           <button
             type="button"
             onclick={onOpenAuth}
-            class="font-mono text-[9px] text-[#E62E25] hover:text-[#F2EFE9] uppercase border border-[#262629] hover:border-[#E62E25] px-2 py-1 transition-colors"
+            class="font-mono text-[9px] text-accent hover:text-[#F2EFE9] uppercase border border-[#262629] hover:border-accent px-2 py-1 transition-colors"
           >
             [SIGN IN / REGISTER]
           </button>
@@ -123,14 +119,14 @@
                   <button
                     type="button"
                     onclick={() => onWatchlistMarkSeen(item)}
-                    class="border border-[#262629] px-1.5 py-0.5 text-[#8A8882] hover:text-[#E62E25] hover:border-[#E62E25] transition-colors uppercase"
+                    class="border border-[#262629] px-1.5 py-0.5 text-[#8A8882] hover:text-accent hover:border-accent transition-colors uppercase"
                   >
                     [SEEN]
                   </button>
                   <button
                     type="button"
                     onclick={() => onRemoveWatchlist(item.id)}
-                    class="border border-[#262629] px-1.5 py-0.5 text-[#8A8882] hover:text-[#F2EFE9] hover:border-[#E62E25] transition-colors uppercase ml-auto"
+                    class="border border-[#262629] px-1.5 py-0.5 text-[#8A8882] hover:text-[#F2EFE9] hover:border-accent transition-colors uppercase ml-auto"
                     title="Remove from watchlist"
                   >
                     ✕
@@ -159,7 +155,7 @@
           <button
             type="button"
             onclick={onOpenAuth}
-            class="font-mono text-[9px] text-[#E62E25] hover:text-[#F2EFE9] uppercase border border-[#262629] hover:border-[#E62E25] px-2 py-1 transition-colors"
+            class="font-mono text-[9px] text-accent hover:text-[#F2EFE9] uppercase border border-[#262629] hover:border-accent px-2 py-1 transition-colors"
           >
             [SIGN IN / REGISTER]
           </button>
@@ -182,7 +178,7 @@
                   </p>
                   {#if seed.sentence}
                     <p
-                      class="font-serif italic text-[11px] text-[#8A8882] mt-1.5 line-clamp-1 border-l border-[#E62E25] pl-1.5"
+                      class="font-serif italic text-[11px] text-[#8A8882] mt-1.5 line-clamp-1 border-l border-accent pl-1.5"
                     >
                       "{seed.sentence}"
                     </p>
@@ -191,7 +187,7 @@
                 <button
                   type="button"
                   onclick={() => onLoadRecentSeed(seed)}
-                  class="font-mono text-[9px] text-[#8A8882] hover:text-[#E62E25] border border-[#262629] hover:border-[#E62E25] px-1.5 py-0.5 shrink-0 transition-colors uppercase mt-0.5"
+                  class="font-mono text-[9px] text-[#8A8882] hover:text-accent border border-[#262629] hover:border-accent px-1.5 py-0.5 shrink-0 transition-colors uppercase mt-0.5"
                 >
                   LOAD →
                 </button>
@@ -208,26 +204,15 @@
         <span class="font-mono text-xs tracking-widest text-[#8A8882] uppercase">
           ALREADY SEEN {currentUser ? `(${seenList.length})` : ''}
         </span>
-        <div class="flex items-center gap-2">
-          {#if currentUser && onOpenLibrary}
-            <button
-              type="button"
-              onclick={() => onOpenLibrary('seen')}
-              class="font-mono text-[9px] uppercase text-[#8A8882] hover:text-[#E62E25] transition-colors"
-            >
-              VIEW ALL ↗
-            </button>
-          {/if}
-          {#if currentUser && seenList.length > 0}
-            <button
-              type="button"
-              onclick={onClearSeen}
-              class="font-mono text-[9px] text-[#8A8882] hover:text-[#E62E25] transition-colors uppercase"
-            >
-              CLEAR
-            </button>
-          {/if}
-        </div>
+        {#if currentUser && seenList.length > 0}
+          <button
+            type="button"
+            onclick={onClearSeen}
+            class="font-mono text-[9px] text-[#8A8882] hover:text-accent hover:border-accent border border-[#262629] px-1.5 py-0.5 transition-colors uppercase"
+          >
+            [CLEAR]
+          </button>
+        {/if}
       </div>
 
       {#if !currentUser}
@@ -238,7 +223,7 @@
           <button
             type="button"
             onclick={onOpenAuth}
-            class="font-mono text-[9px] text-[#E62E25] hover:text-[#F2EFE9] uppercase border border-[#262629] hover:border-[#E62E25] px-2 py-1 transition-colors"
+            class="font-mono text-[9px] text-accent hover:text-[#F2EFE9] uppercase border border-[#262629] hover:border-accent px-2 py-1 transition-colors"
           >
             [SIGN IN / REGISTER]
           </button>
@@ -258,7 +243,7 @@
                 <button
                   type="button"
                   onclick={() => onUndoSeen(item.id)}
-                  class="font-mono text-[9px] text-[#8A8882] hover:text-[#E62E25] uppercase transition-colors shrink-0"
+                  class="font-mono text-[9px] text-[#8A8882] hover:text-accent hover:border-accent border border-[#262629] px-1.5 py-0.5 uppercase transition-colors shrink-0"
                 >
                   [UNDO]
                 </button>
@@ -274,7 +259,7 @@
                     type="button"
                     onclick={() => onRateSeenMovie(item.id, star)}
                     class="font-mono text-xs transition-colors px-0.5 hover:scale-125 {isFilled
-                      ? 'text-[#E62E25]'
+                      ? 'text-accent'
                       : 'text-[#262629] hover:text-[#8A8882]'}"
                     title="Rate {star}/5 stars"
                   >
@@ -282,7 +267,7 @@
                   </button>
                 {/each}
                 {#if item.rating}
-                  <span class="font-mono text-[9px] text-[#E62E25] font-bold ml-1.5">
+                  <span class="font-mono text-[9px] text-accent font-bold ml-1.5">
                     {item.rating}/5
                   </span>
                 {:else}
@@ -298,9 +283,52 @@
     </div>
   </div>
 
+  <!-- Color Accent Switcher: Crimson + Amber + Acid + Custom -->
   <div
-    class="pt-4 border-t border-[#262629] font-mono text-[10px] text-[#8A8882] flex justify-between uppercase tracking-wider mt-6 opacity-0 pointer-events-none"
+    class="pt-4 border-t border-[#262629] font-mono text-[10px] uppercase tracking-wider mt-6 flex items-center justify-between"
   >
-    <span>KURO</span>
+    <div class="flex items-center gap-1.5 text-[#8A8882]">
+      <span class="w-2 h-2 inline-block shrink-0" style="background-color: var(--accent);"></span>
+      <span>ACCENT</span>
+    </div>
+    <div class="flex items-center gap-1.5">
+      {#each STOCK_THEMES as theme (theme.id)}
+        <button
+          type="button"
+          onclick={() => themeStore.setTheme(theme.id)}
+          class="w-4 h-4 transition-all flex items-center justify-center border {themeStore.currentTheme === theme.id ? 'border-[#F2EFE9] scale-110' : 'border-[#262629] hover:border-[#8A8882]'}"
+          style="background-color: {theme.color};"
+          title="{theme.label}"
+          aria-label="Set accent color to {theme.label}"
+        >
+          {#if themeStore.currentTheme === theme.id}
+            <span class="w-1 h-1 bg-[#0A0A0B]"></span>
+          {/if}
+        </button>
+      {/each}
+
+      <!-- Custom Color Picker Swatch -->
+      <label
+        class="relative w-4 h-4 cursor-pointer transition-all flex items-center justify-center border {themeStore.currentTheme === 'custom' ? 'border-[#F2EFE9] scale-110' : 'border-[#262629] hover:border-[#8A8882]'}"
+        style="background-color: {themeStore.customColor};"
+        title="CUSTOM ({themeStore.customColor.toUpperCase()})"
+        aria-label="Set custom accent color"
+      >
+        <input
+          type="color"
+          value={themeStore.customColor}
+          oninput={(e) => themeStore.setCustomColor(e.currentTarget.value)}
+          onchange={(e) => themeStore.setCustomColor(e.currentTarget.value)}
+          onclick={() => themeStore.setTheme('custom')}
+          class="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
+          aria-label="Custom accent color input"
+        />
+        {#if themeStore.currentTheme === 'custom'}
+          <span class="w-1 h-1 bg-[#0A0A0B] pointer-events-none z-10"></span>
+        {:else}
+          <span class="font-mono text-[8px] leading-none text-[#F2EFE9] drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)] font-bold pointer-events-none z-10 select-none">+</span>
+        {/if}
+      </label>
+    </div>
   </div>
 </aside>

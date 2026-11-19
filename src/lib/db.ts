@@ -50,9 +50,14 @@ export async function ensureDbInitialized() {
       CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT UNIQUE NOT NULL COLLATE NOCASE,
-        password_hash TEXT NOT NULL,
-        salt TEXT NOT NULL,
+        email TEXT UNIQUE,
+        google_id TEXT UNIQUE,
+        avatar_url TEXT,
+        password_hash TEXT,
+        salt TEXT,
         role TEXT NOT NULL CHECK (role IN ('admin', 'member')) DEFAULT 'member',
+        theme_preference TEXT DEFAULT 'crimson',
+        custom_color TEXT,
         created_at INTEGER NOT NULL
       );
       CREATE TABLE IF NOT EXISTS sessions (
@@ -120,6 +125,32 @@ export async function ensureDbInitialized() {
       CREATE INDEX IF NOT EXISTS idx_recent_seeds_user ON recent_seeds(user_id);
       CREATE INDEX IF NOT EXISTS idx_discovery_logs_created ON discovery_logs(created_at);
     `);
+
+    // Ensure backwards-compatible schema migration for existing databases
+    const migrations = [
+      'ALTER TABLE users ADD COLUMN email TEXT',
+      'ALTER TABLE users ADD COLUMN google_id TEXT',
+      'ALTER TABLE users ADD COLUMN avatar_url TEXT',
+      "ALTER TABLE users ADD COLUMN theme_preference TEXT DEFAULT 'crimson'",
+      'ALTER TABLE users ADD COLUMN custom_color TEXT',
+    ];
+    for (const statement of migrations) {
+      try {
+        await client.execute(statement);
+      } catch {
+        // column already exists
+      }
+    }
+    try {
+      await client.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google_id ON users(google_id)');
+    } catch {
+      // index already exists
+    }
+    try {
+      await client.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email)');
+    } catch {
+      // index already exists
+    }
 
     // Seed default Admin if no users exist
     const userCount = await db.select({ value: count() }).from(users);

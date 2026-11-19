@@ -5,14 +5,16 @@ import { users } from '$lib/schema';
 import { eq, sql, desc, count } from 'drizzle-orm';
 import type { Role } from '$lib/types';
 
-export const GET: RequestHandler = async ({ request }) => {
-  const adminCheck = await requireAdmin(request);
+export const GET: RequestHandler = async ({ request, cookies }) => {
+  const adminCheck = await requireAdmin(request, cookies);
   if ('errorResponse' in adminCheck) return adminCheck.errorResponse;
 
   const rows = await db
     .select({
       id: users.id,
       username: users.username,
+      email: users.email,
+      avatarUrl: users.avatarUrl,
       role: users.role,
       createdAt: users.createdAt,
       watchlistCount: sql<number>`(SELECT COUNT(*) FROM watchlists w WHERE w.user_id = ${users.id})`,
@@ -28,8 +30,8 @@ export const GET: RequestHandler = async ({ request }) => {
   });
 };
 
-export const PATCH: RequestHandler = async ({ request }) => {
-  const adminCheck = await requireAdmin(request);
+export const PATCH: RequestHandler = async ({ request, cookies }) => {
+  const adminCheck = await requireAdmin(request, cookies);
   if ('errorResponse' in adminCheck) return adminCheck.errorResponse;
 
   try {

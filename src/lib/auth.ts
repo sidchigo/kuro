@@ -70,6 +70,8 @@ export async function validateSession(token: string): Promise<User | null> {
       email: users.email,
       avatarUrl: users.avatarUrl,
       role: users.role,
+      themePreference: users.themePreference,
+      customColor: users.customColor,
       createdAt: users.createdAt,
       expiresAt: sessions.expiresAt,
     })
@@ -89,6 +91,8 @@ export async function validateSession(token: string): Promise<User | null> {
     email: row.email ?? undefined,
     avatarUrl: row.avatarUrl ?? undefined,
     role: row.role as Role,
+    themePreference: row.themePreference ?? 'crimson',
+    customColor: row.customColor ?? undefined,
     createdAt: row.createdAt,
   };
 }

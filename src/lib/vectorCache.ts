@@ -1,14 +1,17 @@
+import { EMBEDDING_CONFIG } from './embeddingConfig';
+
 /**
- * Fast, typed persistent vector caching layer for 256-dim Float32Array movie embeddings.
- * - Primary Client-Side Store: IndexedDB (database: kuro_vector_cache, store: movie_embeddings)
- * - Server-Side / Node Fallback: Module-level bounded Map (bounded to 2,000 entries with LRU eviction)
- * - Composite Key: ${tmdbId}_gemma300m_256d_v1
+ * Fast, typed persistent vector caching layer for 256-dim Float32Array embeddings.
+ * - Client / Web Worker Store: IndexedDB (movie_embeddings + vibe_anchors stores)
+ * - Server / Node Fallback: Module-level bounded Map with LRU eviction
  */
 
-export const CACHE_VERSION_TAG = 'gemma300m_256d_v1';
-export const DB_NAME = 'kuro_vector_cache';
-export const STORE_NAME = 'movie_embeddings';
-export const MAX_CACHE_ENTRIES = 2000;
+export const CACHE_VERSION_TAG = EMBEDDING_CONFIG.cacheVersionTag;
+export const DB_NAME = EMBEDDING_CONFIG.cacheDbName;
+export const DB_VERSION = EMBEDDING_CONFIG.cacheDbVersion;
+export const STORE_NAME = EMBEDDING_CONFIG.movieStoreName;
+export const ANCHORS_STORE_NAME = EMBEDDING_CONFIG.anchorsStoreName;
+export const MAX_CACHE_ENTRIES = EMBEDDING_CONFIG.maxCacheEntries;
 
 export interface VectorCacheEntry {
   cacheKey: string;
@@ -17,15 +20,21 @@ export interface VectorCacheEntry {
   updatedAt: number;
 }
 
+export interface AnchorCacheEntry {
+  anchorId: string;
+  vector: Float32Array;
+}
+
 export function buildCacheKey(tmdbId: number): string {
   return `${tmdbId}_${CACHE_VERSION_TAG}`;
 }
 
-// Module-level in-memory cache for serverless/Node or environments without IndexedDB
+// Module-level in-memory fallback for Node/SSR or environments without IndexedDB
 const memoryStore = new Map<string, VectorCacheEntry>();
+const memoryAnchorsStore = new Map<string, Float32Array>();
 
 function isIndexedDBAvailable(): boolean {
-  return typeof window !== 'undefined' && typeof indexedDB !== 'undefined';
+  return typeof indexedDB !== 'undefined';
 }
 
 let idbPromise: Promise<IDBDatabase> | null = null;
@@ -38,7 +47,7 @@ function getIDB(): Promise<IDBDatabase> {
       return reject(new Error('IndexedDB not supported in current environment.'));
     }
 
-    const req = indexedDB.open(DB_NAME, 1);
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
 
     req.onupgradeneeded = () => {
       const db = req.result;
@@ -46,6 +55,9 @@ function getIDB(): Promise<IDBDatabase> {
         const store = db.createObjectStore(STORE_NAME, { keyPath: 'cacheKey' });
         store.createIndex('updatedAt', 'updatedAt', { unique: false });
         store.createIndex('tmdbId', 'tmdbId', { unique: false });
+      }
+      if (!db.objectStoreNames.contains(ANCHORS_STORE_NAME)) {
+        db.createObjectStore(ANCHORS_STORE_NAME, { keyPath: 'anchorId' });
       }
     };
 
@@ -62,13 +74,11 @@ function getIDB(): Promise<IDBDatabase> {
 
 /**
  * Batched retrieval of movie embedding vectors for given TMDB IDs.
- * Returns a Map from tmdbId to 256-d Float32Array.
  */
 export async function getMany(tmdbIds: number[]): Promise<Map<number, Float32Array>> {
   const result = new Map<number, Float32Array>();
   if (!tmdbIds || tmdbIds.length === 0) return result;
 
-  // 1. Try IndexedDB if in browser environment
   if (isIndexedDBAvailable()) {
     try {
       const db = await getIDB();
@@ -81,26 +91,24 @@ export async function getMany(tmdbIds: number[]): Promise<Map<number, Float32Arr
         const total = tmdbIds.length;
 
         for (const id of tmdbIds) {
-          const key = buildCacheKey(id);
-          const req = store.get(key);
+          const req = store.get(buildCacheKey(id));
 
           req.onsuccess = () => {
             const entry = req.result as VectorCacheEntry | undefined;
-            if (entry && entry.vector) {
-              const vec = entry.vector instanceof Float32Array ? entry.vector : new Float32Array(entry.vector);
+            if (entry?.vector) {
+              const vec =
+                entry.vector instanceof Float32Array
+                  ? entry.vector
+                  : new Float32Array(entry.vector);
               map.set(id, vec);
             }
             completed++;
-            if (completed === total) {
-              resolve(map);
-            }
+            if (completed === total) resolve(map);
           };
 
           req.onerror = () => {
             completed++;
-            if (completed === total) {
-              resolve(map);
-            }
+            if (completed === total) resolve(map);
           };
         }
 
@@ -111,13 +119,11 @@ export async function getMany(tmdbIds: number[]): Promise<Map<number, Float32Arr
     }
   }
 
-  // 2. Server-side / Memory fallback
   const now = Date.now();
   for (const id of tmdbIds) {
-    const key = buildCacheKey(id);
-    const entry = memoryStore.get(key);
+    const entry = memoryStore.get(buildCacheKey(id));
     if (entry) {
-      entry.updatedAt = now; // update for LRU
+      entry.updatedAt = now;
       result.set(id, entry.vector);
     }
   }
@@ -126,9 +132,7 @@ export async function getMany(tmdbIds: number[]): Promise<Map<number, Float32Arr
 }
 
 /**
- * Batched persistence of movie embedding vectors.
- * Directly stores Float32Array without serialization overhead.
- * Enforces LRU eviction if entry count exceeds MAX_CACHE_ENTRIES (2,000).
+ * Batched persistence of movie embedding vectors with LRU eviction.
  */
 export async function setMany(
   entries: Array<{ tmdbId: number; vector: Float32Array }>
@@ -136,7 +140,6 @@ export async function setMany(
   if (!entries || entries.length === 0) return;
   const now = Date.now();
 
-  // 1. If IndexedDB available, persist in single readwrite transaction
   if (isIndexedDBAvailable()) {
     try {
       const db = await getIDB();
@@ -145,9 +148,8 @@ export async function setMany(
         const store = tx.objectStore(STORE_NAME);
 
         for (const { tmdbId, vector } of entries) {
-          const cacheKey = buildCacheKey(tmdbId);
           store.put({
-            cacheKey,
+            cacheKey: buildCacheKey(tmdbId),
             tmdbId,
             vector,
             updatedAt: now,
@@ -159,7 +161,6 @@ export async function setMany(
         tx.onabort = () => reject(tx.error);
       });
 
-      // Async LRU cleanup if entry count exceeds MAX_CACHE_ENTRIES
       cleanupIndexedDBLRU(db).catch(() => {});
       return;
     } catch (err) {
@@ -167,7 +168,6 @@ export async function setMany(
     }
   }
 
-  // 2. Server-side / Memory fallback
   for (const { tmdbId, vector } of entries) {
     const key = buildCacheKey(tmdbId);
     memoryStore.set(key, {
@@ -178,7 +178,6 @@ export async function setMany(
     });
   }
 
-  // LRU eviction for in-memory store
   if (memoryStore.size > MAX_CACHE_ENTRIES) {
     const sorted = Array.from(memoryStore.entries()).sort(
       (a, b) => a[1].updatedAt - b[1].updatedAt
@@ -191,8 +190,77 @@ export async function setMany(
 }
 
 /**
- * Evicts oldest entries in IndexedDB when total exceeds MAX_CACHE_ENTRIES (2,000).
+ * Reads all cached vibe anchor vectors (IndexedDB in browser/worker, memory fallback on server).
  */
+export async function getVibeAnchors(): Promise<Map<string, Float32Array>> {
+  const result = new Map<string, Float32Array>();
+
+  if (isIndexedDBAvailable()) {
+    try {
+      const db = await getIDB();
+      if (db.objectStoreNames.contains(ANCHORS_STORE_NAME)) {
+        const loaded = await new Promise<AnchorCacheEntry[]>((resolve) => {
+          const tx = db.transaction(ANCHORS_STORE_NAME, 'readonly');
+          const store = tx.objectStore(ANCHORS_STORE_NAME);
+          const req = store.getAll();
+          req.onsuccess = () => resolve((req.result as AnchorCacheEntry[]) || []);
+          req.onerror = () => resolve([]);
+        });
+
+        for (const item of loaded) {
+          if (item?.anchorId && item.vector) {
+            const vec =
+              item.vector instanceof Float32Array
+                ? item.vector
+                : new Float32Array(item.vector);
+            result.set(item.anchorId, vec);
+          }
+        }
+        return result;
+      }
+    } catch (err) {
+      console.warn('[VectorCache] IndexedDB anchor read failed:', err);
+    }
+  }
+
+  for (const [id, vec] of memoryAnchorsStore.entries()) {
+    result.set(id, vec);
+  }
+  return result;
+}
+
+/**
+ * Persists vibe anchor vectors to IndexedDB (or memory fallback).
+ */
+export async function setVibeAnchors(entries: AnchorCacheEntry[]): Promise<void> {
+  if (!entries || entries.length === 0) return;
+
+  if (isIndexedDBAvailable()) {
+    try {
+      const db = await getIDB();
+      if (db.objectStoreNames.contains(ANCHORS_STORE_NAME)) {
+        await new Promise<void>((resolve, reject) => {
+          const tx = db.transaction(ANCHORS_STORE_NAME, 'readwrite');
+          const store = tx.objectStore(ANCHORS_STORE_NAME);
+          for (const item of entries) {
+            store.put(item);
+          }
+          tx.oncomplete = () => resolve();
+          tx.onerror = () => reject(tx.error);
+          tx.onabort = () => reject(tx.error);
+        });
+        return;
+      }
+    } catch (err) {
+      console.warn('[VectorCache] IndexedDB anchor write failed:', err);
+    }
+  }
+
+  for (const { anchorId, vector } of entries) {
+    memoryAnchorsStore.set(anchorId, vector);
+  }
+}
+
 async function cleanupIndexedDBLRU(db: IDBDatabase): Promise<void> {
   try {
     const count = await new Promise<number>((resolve, reject) => {
@@ -211,7 +279,7 @@ async function cleanupIndexedDBLRU(db: IDBDatabase): Promise<void> {
     const index = store.index('updatedAt');
 
     let deleted = 0;
-    const cursorReq = index.openCursor(); // iterates oldest first (ascending updatedAt)
+    const cursorReq = index.openCursor();
 
     cursorReq.onsuccess = () => {
       const cursor = cursorReq.result;
@@ -226,9 +294,6 @@ async function cleanupIndexedDBLRU(db: IDBDatabase): Promise<void> {
   }
 }
 
-/**
- * Helper to get cache metrics / stats (useful for telemetry and testing)
- */
 export async function getStats(): Promise<{ size: number; backend: 'indexedDB' | 'memory' }> {
   if (isIndexedDBAvailable()) {
     try {
@@ -248,11 +313,9 @@ export async function getStats(): Promise<{ size: number; backend: 'indexedDB' |
   return { size: memoryStore.size, backend: 'memory' };
 }
 
-/**
- * Helper to clear cache (for tests or debug)
- */
 export async function clearCache(): Promise<void> {
   memoryStore.clear();
+  memoryAnchorsStore.clear();
   if (isIndexedDBAvailable()) {
     try {
       const db = await getIDB();
@@ -267,6 +330,8 @@ export async function clearCache(): Promise<void> {
 export const vectorCache = {
   getMany,
   setMany,
+  getVibeAnchors,
+  setVibeAnchors,
   getStats,
   clearCache,
   buildCacheKey,

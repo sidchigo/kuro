@@ -12,6 +12,34 @@
       href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;500;600;700&display=swap"
       rel="stylesheet"
     />
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem('kuro_theme');
+          var themes = {
+            crimson: { hex: '#E62E25', rgb: '230 46 37' },
+            amber: { hex: '#FF6B00', rgb: '255 107 0' },
+            acid: { hex: '#00E676', rgb: '0 230 118' }
+          };
+          if (t === 'custom') {
+            var c = localStorage.getItem('kuro_custom_color') || '#A855F7';
+            var clean = c.replace('#', '').trim();
+            if (clean.length === 3) clean = clean.split('').map(function(ch) { return ch + ch; }).join('');
+            var num = parseInt(clean, 16);
+            if (!isNaN(num) && clean.length === 6) {
+              var rgb = ((num >> 16) & 255) + ' ' + ((num >> 8) & 255) + ' ' + (num & 255);
+              document.documentElement.setAttribute('data-theme', 'custom');
+              document.documentElement.style.setProperty('--accent', c);
+              document.documentElement.style.setProperty('--accent-rgb', rgb);
+            }
+          } else if (t && themes[t]) {
+            document.documentElement.setAttribute('data-theme', t);
+            document.documentElement.style.setProperty('--accent', themes[t].hex);
+            document.documentElement.style.setProperty('--accent-rgb', themes[t].rgb);
+          }
+        } catch (e) {}
+      })();
+    </script>
     %sveltekit.head%
   </head>
   <body class="bg-[#0A0A0B] text-[#F2EFE9] antialiased" data-sveltekit-preload-data="hover">
