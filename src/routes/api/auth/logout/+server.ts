@@ -1,26 +1,26 @@
-import type { RequestHandler } from './$types';
-import { getCookieToken, deleteSession, COOKIE_NAME } from '$lib/auth';
+import { json, type RequestHandler } from '@sveltejs/kit';
+import { getCookieToken, deleteSession, COOKIE_NAME, createClearCookieHeader } from '$lib/auth';
 
 export const POST: RequestHandler = async ({ request, cookies, url }) => {
-  const token = getCookieToken(request);
+  const token = cookies.get(COOKIE_NAME) || getCookieToken(request);
   if (token) {
-    await deleteSession(token);
+    try {
+      await deleteSession(token);
+    } catch {
+      // Ignore database errors during session cleanup
+    }
   }
 
-  const isHttps =
-    url.protocol === 'https:' || request.headers.get('x-forwarded-proto') === 'https';
+  // Clear session cookie across all environments
+  cookies.delete(COOKIE_NAME, { path: '/' });
 
-  cookies.delete(COOKIE_NAME, {
-    path: '/',
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: isHttps,
-  });
-
-  return new Response(JSON.stringify({ success: true }), {
-    status: 200,
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  });
+  return json(
+    { success: true },
+    {
+      headers: {
+        'Set-Cookie': createClearCookieHeader(request, url),
+        'Cache-Control': 'no-store, no-cache, must-revalidate',
+      },
+    }
+  );
 };

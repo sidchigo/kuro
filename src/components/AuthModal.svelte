@@ -1,164 +1,109 @@
 <script lang="ts">
-  import type { User } from '$lib/types';
-
   interface Props {
     isOpen: boolean;
     onClose: () => void;
-    onAuthSuccess: (user: User) => void;
+    authError?: string | null;
   }
 
-  let { isOpen, onClose, onAuthSuccess }: Props = $props();
+  let { isOpen, onClose, authError = null }: Props = $props();
 
-  let tab = $state<'login' | 'register'>('login');
-  let username = $state('');
-  let password = $state('');
-  let error = $state<string | null>(null);
-  let isLoading = $state(false);
-  let usernameInput: HTMLInputElement | undefined = $state();
+  let localError = $state<string | null>(null);
 
   $effect(() => {
-    if (isOpen) {
-      error = null;
-      setTimeout(() => usernameInput?.focus(), 0);
+    if (authError) {
+      localError = authError;
     }
   });
 
-  async function hashClientPassword(pwd: string): Promise<string> {
-    if (typeof window !== 'undefined' && window.crypto?.subtle) {
-      const encoder = new TextEncoder();
-      const data = encoder.encode(pwd);
-      const hashBuffer = await window.crypto.subtle.digest('SHA-256', data);
-      return Array.from(new Uint8Array(hashBuffer))
-        .map((b) => b.toString(16).padStart(2, '0'))
-        .join('');
-    }
-    return pwd;
-  }
-
-  async function handleSubmit(e: SubmitEvent) {
-    e.preventDefault();
-    error = null;
-    isLoading = true;
-
-    const endpoint = tab === 'login' ? '/api/auth/login' : '/api/auth/register';
-
-    try {
-      const securePassword = await hashClientPassword(password);
-      const res = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: username.trim(), password: securePassword }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        error = data.error || 'Authentication failed';
-        return;
+  $effect(() => {
+    if (!isOpen) return;
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        onClose();
       }
-
-      password = '';
-      onAuthSuccess(data.user);
-      onClose();
-    } catch {
-      error = 'Network communication failed';
-    } finally {
-      isLoading = false;
     }
-  }
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  });
 </script>
 
 {#if isOpen}
-  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-    <div class="w-full max-w-[380px] bg-[#0A0A0B] border border-[#262629] p-6 shadow-none">
-      <!-- Header & Tabs -->
-      <div class="flex items-center justify-between pb-3 border-b border-[#262629] mb-4">
-        <div class="flex items-center gap-4 font-mono text-xs uppercase">
-          <button
-            type="button"
-            onclick={() => {
-              tab = 'login';
-              error = null;
-            }}
-            class="pb-1 transition-colors {tab === 'login'
-              ? 'text-[#F2EFE9] border-b border-[#E62E25] font-bold'
-              : 'text-[#8A8882] hover:text-[#F2EFE9]'}"
-          >
-            SIGN IN
-          </button>
-          <button
-            type="button"
-            onclick={() => {
-              tab = 'register';
-              error = null;
-            }}
-            class="pb-1 transition-colors {tab === 'register'
-              ? 'text-[#F2EFE9] border-b border-[#E62E25] font-bold'
-              : 'text-[#8A8882] hover:text-[#F2EFE9]'}"
-          >
-            CREATE ACCOUNT
-          </button>
-        </div>
+  <div
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-sm p-4 select-none"
+    role="dialog"
+    aria-modal="true"
+  >
+    <div class="w-full max-w-[400px] bg-[#0A0A0B] border border-[#262629] p-6 shadow-none">
+      <!-- Header -->
+      <div class="flex items-center justify-between pb-3 border-b border-[#262629] mb-5">
+        <span class="font-mono text-xs uppercase tracking-wider text-[#F2EFE9] font-bold">
+          [KURO ACCESS]
+        </span>
         <button
           type="button"
           onclick={onClose}
-          class="font-mono text-sm text-[#8A8882] hover:text-[#E62E25] transition-colors"
+          class="font-mono text-xs text-[#8A8882] hover:text-[#E62E25] transition-colors"
         >
-          ✕
+          ✕ CLOSE
         </button>
       </div>
 
-      <!-- Error message -->
-      {#if error}
-        <div class="mb-4 p-2.5 border border-[#E62E25] bg-[#E62E25]/10 font-mono text-[11px] text-[#E62E25]">
-          {error}
+      <!-- Icon & Information -->
+      <div class="text-center py-2 space-y-3">
+        <span class="font-serif text-5xl text-[#E62E25] leading-none select-none">黒</span>
+        <h3 class="font-serif text-2xl text-[#F2EFE9]">AUTHENTICATE</h3>
+        <p class="font-mono text-[11px] text-[#8A8882] uppercase tracking-wider leading-relaxed">
+          Sign in to preserve your persistent Plan to Watch list, Already Seen blacklist, and 5-star ratings across devices.
+        </p>
+      </div>
+
+      <!-- Error Alert -->
+      {#if localError}
+        <div class="my-4 p-3 border border-[#E62E25] bg-[#E62E25]/10 font-mono text-[11px] text-[#E62E25] flex items-start justify-between gap-2">
+          <span>{localError}</span>
+          <button
+            type="button"
+            onclick={() => (localError = null)}
+            class="text-[#8A8882] hover:text-[#F2EFE9] text-xs leading-none shrink-0"
+            aria-label="Dismiss error"
+          >
+            ✕
+          </button>
         </div>
       {/if}
 
-      <!-- Form -->
-      <form onsubmit={handleSubmit} class="space-y-4">
-        <div>
-          <label
-            for="kuro-auth-username"
-            class="block font-mono text-[10px] text-[#8A8882] uppercase tracking-wider mb-1"
-          >
-            USERNAME
-          </label>
-          <input
-            id="kuro-auth-username"
-            bind:this={usernameInput}
-            type="text"
-            required
-            bind:value={username}
-            placeholder="e.g. kuro_member"
-            class="w-full h-10 bg-transparent border border-[#262629] px-3 font-mono text-xs text-[#F2EFE9] placeholder:text-[#8A8882]/50 focus:border-[#F2EFE9] focus:outline-none transition-colors"
-          />
-        </div>
-
-        <div>
-          <label
-            for="kuro-auth-password"
-            class="block font-mono text-[10px] text-[#8A8882] uppercase tracking-wider mb-1"
-          >
-            PASSWORD
-          </label>
-          <input
-            id="kuro-auth-password"
-            type="password"
-            required
-            bind:value={password}
-            placeholder="••••••••"
-            class="w-full h-10 bg-transparent border border-[#262629] px-3 font-mono text-xs text-[#F2EFE9] placeholder:text-[#8A8882]/50 focus:border-[#F2EFE9] focus:outline-none transition-colors"
-          />
-        </div>
-
-        <button
-          type="submit"
-          disabled={isLoading}
-          class="w-full h-11 bg-[#F2EFE9] text-[#0A0A0B] font-mono text-xs font-bold uppercase tracking-wider hover:bg-white disabled:opacity-40 transition-colors mt-2"
+      <!-- 1-Click Google OAuth Action -->
+      <div class="mt-6 space-y-3">
+        <a
+          href="/api/auth/google"
+          rel="external"
+          class="w-full h-12 bg-[#F2EFE9] hover:bg-white text-[#0A0A0B] font-mono text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-3 transition-colors"
         >
-          {isLoading ? 'AUTHENTICATING...' : tab === 'login' ? 'SIGN IN →' : 'REGISTER ACCOUNT →'}
-        </button>
-      </form>
+          <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              fill="#4285F4"
+              d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+            />
+            <path
+              fill="#34A853"
+              d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+            />
+            <path
+              fill="#FBBC05"
+              d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+            />
+            <path
+              fill="#EA4335"
+              d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+            />
+          </svg>
+          <span>CONTINUE WITH GOOGLE →</span>
+        </a>
+
+        <p class="font-mono text-[9px] text-center text-[#8A8882]/70 uppercase tracking-widest">
+          Instant 1-Click Access // No Passwords Required
+        </p>
+      </div>
     </div>
   </div>
 {/if}
