@@ -3,8 +3,11 @@ import { sqliteTable, text, integer, real, uniqueIndex, index } from 'drizzle-or
 export const users = sqliteTable('users', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   username: text('username').notNull().unique(),
-  passwordHash: text('password_hash').notNull(),
-  salt: text('salt').notNull(),
+  email: text('email').unique(),
+  googleId: text('google_id').unique(),
+  avatarUrl: text('avatar_url'),
+  passwordHash: text('password_hash'),
+  salt: text('salt'),
   role: text('role', { enum: ['admin', 'member'] }).notNull().default('member'),
   createdAt: integer('created_at').notNull(),
 });

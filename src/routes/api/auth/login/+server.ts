@@ -50,7 +50,7 @@ export const POST: RequestHandler = async ({ request, cookies, url }) => {
 
     const row = rows[0];
 
-    if (!row) {
+    if (!row || !row.passwordHash || !row.salt) {
       return new Response(JSON.stringify({ error: 'Invalid username or password' }), {
         status: 401,
         headers: { 'Content-Type': 'application/json' },

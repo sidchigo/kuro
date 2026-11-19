@@ -67,6 +67,8 @@ export async function validateSession(token: string): Promise<User | null> {
     .select({
       id: users.id,
       username: users.username,
+      email: users.email,
+      avatarUrl: users.avatarUrl,
       role: users.role,
       createdAt: users.createdAt,
       expiresAt: sessions.expiresAt,
@@ -84,6 +86,8 @@ export async function validateSession(token: string): Promise<User | null> {
   return {
     id: row.id,
     username: row.username,
+    email: row.email ?? undefined,
+    avatarUrl: row.avatarUrl ?? undefined,
     role: row.role as Role,
     createdAt: row.createdAt,
   };
@@ -112,15 +116,27 @@ export function createSessionCookieHeader(token: string, expiresAt: number, requ
     }`;
 }
 
-export function createClearCookieHeader(): string {
-  return `${COOKIE_NAME}=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; SameSite=Lax`;
+export function createClearCookieHeader(request?: Request, url?: URL): string {
+  const isHttps =
+    url?.protocol === 'https:' ||
+    (request
+      ? request.url.startsWith('https://') || request.headers.get('x-forwarded-proto') === 'https'
+      : false);
+  return `${COOKIE_NAME}=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Max-Age=0; HttpOnly; SameSite=Lax${isHttps ? '; Secure' : ''}`;
 }
 
 /**
- * Authenticates request via session cookie or Authorization Bearer header
+ * Authenticates request via session cookie or Authorization Bearer header.
+ * Accepts optional SvelteKit cookies helper for direct cookie tracking.
  */
-export async function authenticateRequest(request: Request): Promise<User | null> {
-  let token = getCookieToken(request);
+export async function authenticateRequest(
+  request: Request,
+  cookies?: { get: (name: string) => string | undefined }
+): Promise<User | null> {
+  let token = cookies ? cookies.get(COOKIE_NAME) : null;
+  if (!token) {
+    token = getCookieToken(request);
+  }
   if (!token) {
     const authHeader = request.headers.get('authorization');
     if (authHeader && authHeader.toLowerCase().startsWith('bearer ')) {
@@ -135,8 +151,11 @@ export async function authenticateRequest(request: Request): Promise<User | null
 /**
  * RBAC Guard: Ensures user is logged in
  */
-export async function requireAuth(request: Request): Promise<{ user: User } | { errorResponse: Response }> {
-  const user = await authenticateRequest(request);
+export async function requireAuth(
+  request: Request,
+  cookies?: { get: (name: string) => string | undefined }
+): Promise<{ user: User } | { errorResponse: Response }> {
+  const user = await authenticateRequest(request, cookies);
   if (!user) {
     return {
       errorResponse: new Response(
@@ -151,8 +170,11 @@ export async function requireAuth(request: Request): Promise<{ user: User } | { 
 /**
  * RBAC Guard: Ensures user has Admin role
  */
-export async function requireAdmin(request: Request): Promise<{ user: User } | { errorResponse: Response }> {
-  const authResult = await requireAuth(request);
+export async function requireAdmin(
+  request: Request,
+  cookies?: { get: (name: string) => string | undefined }
+): Promise<{ user: User } | { errorResponse: Response }> {
+  const authResult = await requireAuth(request, cookies);
   if ('errorResponse' in authResult) {
     return authResult;
   }
