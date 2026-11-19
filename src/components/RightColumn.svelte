@@ -15,7 +15,6 @@
     onRateSeenMovie: (id: number, rating: number) => void;
     onUndoSeen: (id: number) => void;
     onClearSeen: () => void;
-    onOpenLibrary?: (tab?: 'watchlist' | 'seen' | 'recent') => void;
   }
 
   let {
@@ -31,7 +30,6 @@
     onRateSeenMovie,
     onUndoSeen,
     onClearSeen,
-    onOpenLibrary,
   }: Props = $props();
 </script>
 
@@ -41,17 +39,23 @@
   <div class="space-y-6">
     <!-- Top Header with Unrestricted Library Trigger -->
     <div class="flex items-center justify-between pb-3 border-b border-[#262629]">
-      <span class="font-mono text-xs uppercase tracking-widest text-[#F2EFE9]">
-        MY ARCHIVE
-      </span>
-      {#if currentUser && onOpenLibrary}
-        <button
-          type="button"
-          onclick={() => onOpenLibrary('watchlist')}
+      <div class="flex items-center gap-2">
+        <span class="font-mono text-xs uppercase tracking-widest text-[#F2EFE9]">
+          MY ARCHIVE
+        </span>
+        {#if currentUser}
+          <span class="font-mono text-[9px] text-[#8A8882] select-text">
+            @{currentUser.username}
+          </span>
+        {/if}
+      </div>
+      {#if currentUser}
+        <a
+          href="/archive"
           class="font-mono text-[9px] uppercase text-[#E62E25] hover:text-[#F2EFE9] border border-[#262629] hover:border-[#E62E25] px-2 py-0.5 transition-colors"
         >
-          [FULL VIEW ↗]
-        </button>
+          [EXPAND]
+        </a>
       {/if}
     </div>
 
@@ -61,15 +65,6 @@
         <span class="font-mono text-xs tracking-widest text-[#8A8882] uppercase">
           PLAN TO WATCH {currentUser ? `(${sortedWatchlist.length})` : ''}
         </span>
-        {#if currentUser && onOpenLibrary}
-          <button
-            type="button"
-            onclick={() => onOpenLibrary('watchlist')}
-            class="font-mono text-[9px] uppercase text-[#8A8882] hover:text-[#E62E25] transition-colors"
-          >
-            VIEW ALL ↗
-          </button>
-        {/if}
       </div>
 
       {#if !currentUser}
@@ -208,26 +203,15 @@
         <span class="font-mono text-xs tracking-widest text-[#8A8882] uppercase">
           ALREADY SEEN {currentUser ? `(${seenList.length})` : ''}
         </span>
-        <div class="flex items-center gap-2">
-          {#if currentUser && onOpenLibrary}
-            <button
-              type="button"
-              onclick={() => onOpenLibrary('seen')}
-              class="font-mono text-[9px] uppercase text-[#8A8882] hover:text-[#E62E25] transition-colors"
-            >
-              VIEW ALL ↗
-            </button>
-          {/if}
-          {#if currentUser && seenList.length > 0}
-            <button
-              type="button"
-              onclick={onClearSeen}
-              class="font-mono text-[9px] text-[#8A8882] hover:text-[#E62E25] transition-colors uppercase"
-            >
-              CLEAR
-            </button>
-          {/if}
-        </div>
+        {#if currentUser && seenList.length > 0}
+          <button
+            type="button"
+            onclick={onClearSeen}
+            class="font-mono text-[9px] text-[#8A8882] hover:text-[#E62E25] hover:border-[#E62E25] border border-[#262629] px-1.5 py-0.5 transition-colors uppercase"
+          >
+            [CLEAR]
+          </button>
+        {/if}
       </div>
 
       {#if !currentUser}
@@ -258,7 +242,7 @@
                 <button
                   type="button"
                   onclick={() => onUndoSeen(item.id)}
-                  class="font-mono text-[9px] text-[#8A8882] hover:text-[#E62E25] uppercase transition-colors shrink-0"
+                  class="font-mono text-[9px] text-[#8A8882] hover:text-[#E62E25] hover:border-[#E62E25] border border-[#262629] px-1.5 py-0.5 uppercase transition-colors shrink-0"
                 >
                   [UNDO]
                 </button>

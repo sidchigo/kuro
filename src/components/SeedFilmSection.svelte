@@ -99,12 +99,27 @@
             if (searchResults.length > 0) showDropdown = true;
           }}
           placeholder="Search horror title (e.g. Incantation, Cure)..."
-          class="w-full h-11 bg-transparent border border-[#262629] px-3 font-mono text-xs text-[#F2EFE9] placeholder:text-[#8A8882] focus:border-[#F2EFE9] focus:outline-none transition-colors"
+          class="w-full h-11 bg-transparent border border-[#262629] pl-3 pr-9 font-mono text-xs text-[#F2EFE9] placeholder:text-[#8A8882] focus:border-[#F2EFE9] focus:outline-none transition-colors"
         />
         {#if isSearching}
-          <span class="absolute right-3 top-3.5 font-mono text-[10px] text-[#8A8882] animate-pulse">
+          <span
+            class="absolute inset-y-0 right-0 w-9 flex items-center justify-center font-mono text-[10px] leading-none text-[#8A8882] animate-pulse"
+          >
             ...
           </span>
+        {:else if searchQuery}
+          <button
+            type="button"
+            onclick={() => {
+              searchQuery = '';
+              searchResults = [];
+              showDropdown = false;
+            }}
+            aria-label="Clear search"
+            class="absolute inset-y-0 right-0 w-9 flex items-center justify-center font-mono text-[11px] leading-none text-[#8A8882] hover:text-[#F2EFE9] transition-colors"
+          >
+            ✕
+          </button>
         {/if}
       </div>
 
@@ -153,7 +168,7 @@
             onclick={() => handleSelect(chip.id)}
             class="font-mono text-[10px] border border-[#262629] px-2 py-1 text-[#F2EFE9] hover:border-[#F2EFE9] hover:bg-[#121214] transition-colors"
           >
-            {chip.label}
+            [{chip.label}]
           </button>
         {/each}
       </div>
@@ -186,14 +201,18 @@
           {selectedSeed.year || '----'} · [{selectedSeed.originalLanguage}] · {selectedSeed.runtime || 90} MIN
         </p>
 
-        <!-- Keyword Pills -->
-        <div class="flex flex-wrap gap-1 mt-2">
-          {#each selectedSeed.keywords.slice(0, 4) as kw, i (i)}
-            <span class="font-mono text-[9px] border border-[#262629] px-1.5 py-0.5 text-[#8A8882] uppercase">
-              {kw}
-            </span>
-          {/each}
-        </div>
+        <!-- Keyword Tags (Non-Interactive Flat Metadata Chips) -->
+        {#if selectedSeed.keywords && selectedSeed.keywords.length > 0}
+          <div class="flex items-center gap-1.5 flex-wrap mt-2 select-none">
+            {#each selectedSeed.keywords.slice(0, 4) as kw, i (i)}
+              <span
+                class="font-mono text-[9px] bg-[#18181B] text-[#8A8882] px-2 py-0.5 tracking-wider uppercase"
+              >
+                {kw}
+              </span>
+            {/each}
+          </div>
+        {/if}
 
         <!-- Actions: Plan to Watch & Mark Seen -->
         {#if onToggleWatchlist || onMarkSeen}

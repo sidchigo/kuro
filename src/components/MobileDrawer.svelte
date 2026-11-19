@@ -105,7 +105,7 @@
             <button
               type="button"
               onclick={() => onUndoSeen(item.id)}
-              class="font-mono text-[9px] text-[#8A8882] hover:text-[#E62E25]"
+              class="font-mono text-[9px] text-[#8A8882] hover:text-[#E62E25] hover:border-[#E62E25] border border-[#262629] px-1.5 py-0.5 uppercase transition-colors shrink-0"
             >
               [UNDO]
             </button>
