@@ -83,7 +83,7 @@
       kuro<span class="text-[#E62E25]">.</span>
     </h1>
     <p class="font-mono text-[11px] text-[#8A8882] tracking-wider uppercase mt-3 leading-relaxed">
-      Horror film discovery.
+      One film. One sentence. Three nightmares.
     </p>
   </div>
 
