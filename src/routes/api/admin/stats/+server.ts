@@ -5,8 +5,8 @@ import { users, discoveryLogs, sessions } from '$lib/schema';
 import { desc, count, gt, eq } from 'drizzle-orm';
 import type { AdminStats, DiscoveryLogItem } from '$lib/types';
 
-export const GET: RequestHandler = async ({ request }) => {
-  const adminCheck = await requireAdmin(request);
+export const GET: RequestHandler = async ({ request, cookies }) => {
+  const adminCheck = await requireAdmin(request, cookies);
   if ('errorResponse' in adminCheck) return adminCheck.errorResponse;
 
   const now = Date.now();
