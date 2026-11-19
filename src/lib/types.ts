@@ -5,6 +5,8 @@ export type Role = 'admin' | 'member';
 export interface User {
   id: number;
   username: string;
+  email?: string;
+  avatarUrl?: string;
   role: Role;
   createdAt: number;
 }
