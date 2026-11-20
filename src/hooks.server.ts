@@ -1,6 +1,17 @@
 import type { Handle } from '@sveltejs/kit';
 
 export const handle: Handle = async ({ event, resolve }) => {
+  if (event.url.pathname === '/login') {
+    return new Response(null, {
+      status: 302,
+      headers: {
+        Location: '/',
+        'Clear-Site-Data': '"cache", "storage"',
+        'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+      },
+    });
+  }
+
   const response = await resolve(event);
 
   // Enforce zero caching on all HTML documents and SvelteKit route data payloads

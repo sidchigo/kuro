@@ -14,6 +14,13 @@
     />
     <script>
       (function () {
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.getRegistrations().then(function(registrations) {
+            for (var reg of registrations) {
+              reg.unregister();
+            }
+          });
+        }
         try {
           var t = localStorage.getItem('kuro_theme');
           var themes = {
