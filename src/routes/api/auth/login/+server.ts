@@ -1,4 +1,5 @@
 import type { RequestHandler } from './$types';
+import { dev } from '$app/environment';
 import { env } from '$env/dynamic/private';
 import { z } from 'zod';
 import crypto from 'node:crypto';
@@ -14,6 +15,13 @@ const LoginSchema = z.object({
 });
 
 export const POST: RequestHandler = async ({ request, cookies, url }) => {
+  if (!dev) {
+    return new Response(
+      JSON.stringify({ error: 'Manual username/password authentication is disabled in production.' }),
+      { status: 403, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
+
   try {
     let body: unknown;
     try {

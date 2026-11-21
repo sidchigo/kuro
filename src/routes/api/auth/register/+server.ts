@@ -1,4 +1,5 @@
 import type { RequestHandler } from './$types';
+import { dev } from '$app/environment';
 import { z } from 'zod';
 import { db } from '$lib/db';
 import { users } from '$lib/schema';
@@ -16,6 +17,13 @@ const RegisterSchema = z.object({
 });
 
 export const POST: RequestHandler = async ({ request, cookies, url }) => {
+  if (!dev) {
+    return new Response(
+      JSON.stringify({ error: 'Manual registration is disabled in production.' }),
+      { status: 403, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
+
   try {
     let body: unknown;
     try {

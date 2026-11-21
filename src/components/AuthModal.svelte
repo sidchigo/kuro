@@ -10,6 +10,8 @@
 
   let { isOpen, onClose, authError = null, onAuthSuccess }: Props = $props();
 
+  const isDev = import.meta.env.DEV;
+
   let mode = $state<'login' | 'register'>('login');
   let username = $state('');
   let password = $state('');
@@ -143,77 +145,74 @@
         </a>
       </div>
 
-      <!-- Divider -->
-      <div class="relative flex items-center justify-center my-4">
-        <div class="border-t border-[#262629] w-full"></div>
-        <span class="bg-[#0A0A0B] px-2 font-mono text-[9px] uppercase tracking-widest text-[#8A8882] shrink-0">
-          OR LOCAL ACCOUNT
-        </span>
-      </div>
-
-      <!-- Mode Toggle: Sign In / Register -->
-      <div class="grid grid-cols-2 border border-[#262629] mb-3">
-        <button
-          type="button"
-          onclick={() => { mode = 'login'; localError = null; }}
-          class="py-1.5 font-mono text-[10px] uppercase tracking-wider transition-colors {mode === 'login' ? 'bg-[#F2EFE9] text-[#0A0A0B] font-bold' : 'text-[#8A8882] hover:text-[#F2EFE9]'}"
-        >
-          [SIGN IN]
-        </button>
-        <button
-          type="button"
-          onclick={() => { mode = 'register'; localError = null; }}
-          class="py-1.5 font-mono text-[10px] uppercase tracking-wider transition-colors {mode === 'register' ? 'bg-[#F2EFE9] text-[#0A0A0B] font-bold' : 'text-[#8A8882] hover:text-[#F2EFE9]'}"
-        >
-          [REGISTER]
-        </button>
-      </div>
-
-      <!-- Form -->
-      <form onsubmit={handleSubmit} class="space-y-3">
-        <div>
-          <label for="auth-username" class="block font-mono text-[9px] uppercase tracking-wider text-[#8A8882] mb-1">
-            USERNAME
-          </label>
-          <input
-            id="auth-username"
-            type="text"
-            required
-            autocomplete="username"
-            bind:value={username}
-            placeholder="e.g. sid_naik26"
-            class="w-full h-10 bg-[#121214] border border-[#262629] px-3 font-mono text-xs text-[#F2EFE9] placeholder:text-[#8A8882]/50 focus:border-accent focus:outline-none transition-colors"
-          />
+      {#if isDev}
+        <!-- Divider (Dev Only) -->
+        <div class="relative flex items-center justify-center my-4">
+          <div class="border-t border-[#262629] w-full"></div>
+          <span class="bg-[#0A0A0B] px-2 font-mono text-[9px] uppercase tracking-widest text-[#8A8882] shrink-0">
+            LOCAL DEV ONLY
+          </span>
         </div>
 
-        <div>
-          <label for="auth-password" class="block font-mono text-[9px] uppercase tracking-wider text-[#8A8882] mb-1">
-            PASSWORD
-          </label>
-          <input
-            id="auth-password"
-            type="password"
-            required
-            autocomplete={mode === 'login' ? 'current-password' : 'new-password'}
-            bind:value={password}
-            placeholder="••••••••"
-            class="w-full h-10 bg-[#121214] border border-[#262629] px-3 font-mono text-xs text-[#F2EFE9] placeholder:text-[#8A8882]/50 focus:border-accent focus:outline-none transition-colors"
-          />
+        <!-- Mode Toggle: Sign In / Register -->
+        <div class="grid grid-cols-2 border border-[#262629] mb-3">
+          <button
+            type="button"
+            onclick={() => { mode = 'login'; localError = null; }}
+            class="py-1.5 font-mono text-[10px] uppercase tracking-wider transition-colors {mode === 'login' ? 'bg-[#F2EFE9] text-[#0A0A0B] font-bold' : 'text-[#8A8882] hover:text-[#F2EFE9]'}"
+          >
+            [SIGN IN]
+          </button>
+          <button
+            type="button"
+            onclick={() => { mode = 'register'; localError = null; }}
+            class="py-1.5 font-mono text-[10px] uppercase tracking-wider transition-colors {mode === 'register' ? 'bg-[#F2EFE9] text-[#0A0A0B] font-bold' : 'text-[#8A8882] hover:text-[#F2EFE9]'}"
+          >
+            [REGISTER]
+          </button>
         </div>
 
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          class="w-full h-10 border border-[#262629] bg-[#121214] hover:bg-accent hover:border-accent hover:text-[#0A0A0B] text-[#F2EFE9] font-mono text-[11px] font-bold uppercase tracking-wider transition-all disabled:opacity-50"
-        >
-          {isSubmitting ? 'VERIFYING...' : mode === 'login' ? 'SIGN IN →' : 'CREATE ACCOUNT →'}
-        </button>
-      </form>
+        <!-- Form -->
+        <form onsubmit={handleSubmit} class="space-y-3">
+          <div>
+            <label for="auth-username" class="block font-mono text-[9px] uppercase tracking-wider text-[#8A8882] mb-1">
+              USERNAME
+            </label>
+            <input
+              id="auth-username"
+              type="text"
+              required
+              autocomplete="username"
+              bind:value={username}
+              placeholder="Username"
+              class="w-full h-10 bg-[#121214] border border-[#262629] px-3 font-mono text-xs text-[#F2EFE9] placeholder:text-[#8A8882]/50 focus:border-accent focus:outline-none transition-colors"
+            />
+          </div>
 
-      <!-- Local Dev Hint -->
-      <p class="font-mono text-[8px] text-center text-[#8A8882]/60 uppercase tracking-widest mt-4">
-        Default local admin: <span class="text-[#8A8882]">admin</span> / <span class="text-[#8A8882]">kuroadmin123</span>
-      </p>
+          <div>
+            <label for="auth-password" class="block font-mono text-[9px] uppercase tracking-wider text-[#8A8882] mb-1">
+              PASSWORD
+            </label>
+            <input
+              id="auth-password"
+              type="password"
+              required
+              autocomplete={mode === 'login' ? 'current-password' : 'new-password'}
+              bind:value={password}
+              placeholder="••••••••"
+              class="w-full h-10 bg-[#121214] border border-[#262629] px-3 font-mono text-xs text-[#F2EFE9] placeholder:text-[#8A8882]/50 focus:border-accent focus:outline-none transition-colors"
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            class="w-full h-10 border border-[#262629] bg-[#121214] hover:bg-accent hover:border-accent hover:text-[#0A0A0B] text-[#F2EFE9] font-mono text-[11px] font-bold uppercase tracking-wider transition-all disabled:opacity-50"
+          >
+            {isSubmitting ? 'VERIFYING...' : mode === 'login' ? 'SIGN IN →' : 'CREATE ACCOUNT →'}
+          </button>
+        </form>
+      {/if}
     </div>
   </div>
 {/if}

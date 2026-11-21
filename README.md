@@ -25,10 +25,10 @@ Live Deployment: **[https://kuro.siddheshnaik.dev](https://kuro.siddheshnaik.dev
   - High-performance cosine similarity reranking with persistent IndexedDB vector caching.
   - Zero third-party LLM API fees or latency bottlenecks for discovery.
 - **Persistence & ORM**: [Drizzle ORM](https://orm.drizzle.team/) with [LibSQL / SQLite](https://github.com/tursodatabase/libsql). Runs locally as a standalone file (`data/kuro.db`) with zero external database dependencies, or seamlessly connects to Turso for remote clustering.
-- **Authentication**: Dual-provider architecture:
-  - **1-Click Google OAuth 2.0**: Production sign-in with automatic token rotation.
-  - **Local Credentials**: Built-in Username/Password registration and login with salted `scrypt` hashing for local clones, self-hosting, and offline development.
-  - **RBAC**: Multi-user permissions (`Admin` and `Member`) with a pre-seeded local administrator account (`admin` / `kuroadmin123`).
+- **Authentication**:
+  - **1-Click Google OAuth 2.0**: Production sign-in with automatic token rotation and email-based admin role promotion (`ADMIN_EMAIL`).
+  - **Local Credentials (Dev Only)**: Username/Password authentication for offline development and local clones.
+  - **RBAC**: Multi-user permissions (`Admin` and `Member`). In local development, an `admin` account is pre-seeded via `INITIAL_ADMIN_PASSWORD`.
 - **CI/CD & Hosting**: Automated GitHub Actions deployment pipeline deploying directly to an Oracle Cloud VM running Node 20 via `systemd`, reverse-proxied by Nginx with Let's Encrypt SSL and Cloudflare edge caching.
 
 ---
