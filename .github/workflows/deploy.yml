@@ -28,9 +28,16 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
+
+      - name: Cache node_modules
+        id: cache-node-modules
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node-modules-${{ hashFiles('package-lock.json') }}
 
       - name: Install dependencies
+        if: steps.cache-node-modules.outputs.cache-hit != 'true'
         run: npm ci
 
       - name: Code validation & type check
@@ -40,7 +47,7 @@ jobs:
         run: npm run build
 
       - name: Create release archive
-        run: tar -czf kuro-deploy.tar.gz build package.json package-lock.json static
+        run: GZIP=-1 tar -czf kuro-deploy.tar.gz build package.json package-lock.json static
 
       - name: Configure SSH key
         run: |
@@ -53,16 +60,22 @@ jobs:
         run: |
           scp -i ~/.ssh/id_rsa kuro-deploy.tar.gz ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }}:/home/${{ secrets.VM_USER }}/apps/kuro/kuro-deploy.tar.gz
 
-      - name: Extract, install production dependencies & restart service
+      - name: Extract, install dependencies if changed & restart service
         run: |
           ssh -i ~/.ssh/id_rsa ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} << 'EOF'
             set -e
             cd /home/ubuntu/apps/kuro
             tar -xzf kuro-deploy.tar.gz
             rm -f kuro-deploy.tar.gz
-            npm install --omit=dev
+            if [ -f current-package-lock.json ] && cmp -s package-lock.json current-package-lock.json; then
+              echo "Dependencies unchanged. Skipping npm install."
+            else
+              echo "Dependencies changed. Installing production packages..."
+              npm install --omit=dev
+              cp package-lock.json current-package-lock.json
+            fi
             sudo systemctl restart kuro.service
-            sleep 2
+            sleep 1
             curl -f -s -o /dev/null http://127.0.0.1:4322 || (echo "Healthcheck failed on VM!" && exit 1)
             echo "Kuro successfully deployed and running on port 4322!"
           EOF
