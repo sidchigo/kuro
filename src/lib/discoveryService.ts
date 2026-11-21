@@ -11,7 +11,12 @@ import {
 } from './embeddings';
 import { vectorCache } from './vectorCache';
 import { EMBEDDING_CONFIG } from './embeddingConfig';
-import { createPitch, createCatchWarning, generateDeterministicExplanation } from './matchFormatters';
+import {
+  createPitch,
+  createCatchWarning,
+  generateDeterministicExplanation,
+  calibrateMatchPercentage,
+} from './matchFormatters';
 
 export { createPitch, createCatchWarning };
 
@@ -241,7 +246,7 @@ export async function processDiscovery(request: DiscoverRequest): Promise<Discov
       pitch: createPitch(raw),
       catchWarning: createCatchWarning(raw, runtime),
       imdbId: extra?.imdbId,
-      similarity: Math.round(similarity * 100) / 100,
+      similarity: calibrateMatchPercentage(similarity) / 100,
       explanation,
       topThemes,
     };

@@ -119,6 +119,8 @@ export const ORIGIN_LANG_MAP: Record<string, string> = {
  * into an intuitive human-facing match percentage (75% - 98%).
  */
 export function calibrateMatchPercentage(rawSimilarity: number): number {
+  if (rawSimilarity > 1) return Math.min(99, Math.round(rawSimilarity));
+  if (rawSimilarity >= 0.70) return Math.min(99, Math.round(rawSimilarity * 100));
   const floor = 0.18;
   const ceiling = 0.55;
   const clamped = Math.max(floor, Math.min(ceiling, rawSimilarity));
@@ -151,15 +153,13 @@ export function generateDeterministicExplanation(
   const originName = ORIGIN_LANG_MAP[langCode];
   const originPrefix = originName && langCode !== 'en' ? `${originName} ` : '';
 
-  const pct = calibrateMatchPercentage(similarity);
-
   let explanation = '';
   if (top1 && top2 && top2.anchorId !== top1.anchorId) {
-    explanation = `${pct}% match • ${originPrefix}${top1.label} • ${top2.theme}`;
+    explanation = `${originPrefix}${top1.label} • ${top2.theme}`;
   } else if (top1) {
-    explanation = `${pct}% match • ${originPrefix}${top1.label}`;
+    explanation = `${originPrefix}${top1.label}`;
   } else {
-    explanation = `${pct}% match • Atmospheric dread`;
+    explanation = 'Atmospheric dread';
   }
 
   const topThemes = [top1?.theme, top2?.theme].filter(Boolean) as string[];

@@ -97,7 +97,7 @@
                 {#if movie.explanation}
                   <div class="mt-2 py-1 px-2 border-l-2 border-accent bg-[#121214] font-mono text-[10px]">
                     <span class="text-accent font-bold mr-1.5 uppercase">WHY:</span>
-                    <span class="text-[#F2EFE9]/90">{movie.explanation}</span>
+                    <span class="text-[#F2EFE9]/90">{movie.explanation.replace(/^\d+%\s*(match)?\s*[•·-]\s*/i, '')}</span>
                   </div>
                 {/if}
 
