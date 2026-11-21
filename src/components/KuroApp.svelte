@@ -365,10 +365,11 @@
     />
   </div>
 
-  <!-- Auth Modal (Google 1-Click Access) -->
+  <!-- Auth Modal (Google 1-Click & Local Credentials Access) -->
   <AuthModal
     isOpen={isAuthModalOpen}
     onClose={() => (isAuthModalOpen = false)}
     {authError}
+    onAuthSuccess={handleAuthSuccess}
   />
 </div>

@@ -13,6 +13,7 @@ concurrency:
 jobs:
   deploy:
     name: Build & Deploy
+    if: github.repository == 'sidchigo/kuro'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     environment:
@@ -46,15 +47,15 @@ jobs:
           mkdir -p ~/.ssh
           echo "${{ secrets.VM_SSH_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H ${{ secrets.VM_HOST || '92.4.82.227' }} >> ~/.ssh/known_hosts
+          ssh-keyscan -H ${{ secrets.VM_HOST }} >> ~/.ssh/known_hosts
 
       - name: Transfer release archive to Oracle VM
         run: |
-          scp -i ~/.ssh/id_rsa kuro-deploy.tar.gz ${{ secrets.VM_USER || 'ubuntu' }}@${{ secrets.VM_HOST || '92.4.82.227' }}:/home/${{ secrets.VM_USER || 'ubuntu' }}/apps/kuro/kuro-deploy.tar.gz
+          scp -i ~/.ssh/id_rsa kuro-deploy.tar.gz ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }}:/home/${{ secrets.VM_USER }}/apps/kuro/kuro-deploy.tar.gz
 
       - name: Extract, install production dependencies & restart service
         run: |
-          ssh -i ~/.ssh/id_rsa ${{ secrets.VM_USER || 'ubuntu' }}@${{ secrets.VM_HOST || '92.4.82.227' }} << 'EOF'
+          ssh -i ~/.ssh/id_rsa ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} << 'EOF'
             set -e
             cd /home/ubuntu/apps/kuro
             tar -xzf kuro-deploy.tar.gz
