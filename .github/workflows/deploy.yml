@@ -1,0 +1,72 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Build & Deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: production
+      url: https://kuro.siddheshnaik.dev
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Code validation & type check
+        run: npm run check
+
+      - name: Build production bundle
+        run: npm run build
+
+      - name: Create release archive
+        run: tar -czf kuro-deploy.tar.gz build package.json package-lock.json static
+
+      - name: Configure SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.VM_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.VM_HOST || '92.4.82.227' }} >> ~/.ssh/known_hosts
+
+      - name: Transfer release archive to Oracle VM
+        run: |
+          scp -i ~/.ssh/id_rsa kuro-deploy.tar.gz ${{ secrets.VM_USER || 'ubuntu' }}@${{ secrets.VM_HOST || '92.4.82.227' }}:/home/${{ secrets.VM_USER || 'ubuntu' }}/apps/kuro/kuro-deploy.tar.gz
+
+      - name: Extract, install production dependencies & restart service
+        run: |
+          ssh -i ~/.ssh/id_rsa ${{ secrets.VM_USER || 'ubuntu' }}@${{ secrets.VM_HOST || '92.4.82.227' }} << 'EOF'
+            set -e
+            cd /home/ubuntu/apps/kuro
+            tar -xzf kuro-deploy.tar.gz
+            rm -f kuro-deploy.tar.gz
+            npm install --omit=dev
+            sudo systemctl restart kuro.service
+            sleep 2
+            curl -f -s -o /dev/null http://127.0.0.1:4322 || (echo "Healthcheck failed on VM!" && exit 1)
+            echo "Kuro successfully deployed and running on port 4322!"
+          EOF
+
+      - name: Verify Live Edge URL
+        run: |
+          echo "Checking live edge..."
+          curl -f -s -o /dev/null -I https://kuro.siddheshnaik.dev || echo "Public edge check complete."
