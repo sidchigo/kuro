@@ -75,7 +75,7 @@ Fixed full-viewport frame using `grid grid-cols-[1fr_430px_1fr] min-h-screen`:
 - **Oversized Serif Wordmark**: `kuro.` with Accent period + subtitle.
 - **Dynamic Poster Stage**: When a seed movie is selected, renders a stark `1px` framed 2:3 TMDB poster with director, year, and language. When empty, displays a stark minimal typographic mark (`黒` / `— 00 —` / `NO SEED SELECTED`).
 - **Accent Theme Switcher**: 1-click toggles for Crimson, Amber, Acid, and Custom color picker.
-- **Footer Colophon**: `GRID / TOKYO EDITORIAL` and `CINEMA ARCHIVE`.
+- **Footer Colophon**: Release version tag (`v1.0.0`) and repository link (`[GITHUB ↗]`).
 
 #### 2. Center Column (`w-[430px] mx-auto min-h-screen border-x border-[#262629]`):
 - **TopBar (`h-12 px-4 flex items-center justify-between border-b border-[#262629]`):**

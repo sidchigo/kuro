@@ -195,7 +195,7 @@
     <div
       class="mt-3 pt-2.5 border-t border-[#262629]/60 flex items-center justify-between font-mono text-[9px] text-[#8A8882] tracking-wider uppercase"
     >
-      <span>GRID / TOKYO EDITORIAL</span>
+      <span>v1.0.0</span>
       <a
         href="https://github.com/sidchigo/kuro"
         target="_blank"
