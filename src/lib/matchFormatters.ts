@@ -1,5 +1,12 @@
 import type { TMDBRawMovie } from './types';
 import { dotProduct } from './embeddingConfig';
+import {
+  CALIBRATION_THRESHOLDS,
+  VIBE_RESONANCE_WEIGHTS,
+  RUNTIME_THRESHOLDS,
+  CATCH_THRESHOLDS,
+  getLanguageDisplayName,
+} from './constants';
 
 export interface VibeAnchor {
   anchorId: string;
@@ -95,37 +102,38 @@ export const HORROR_VIBE_ANCHORS: VibeAnchor[] = [
   },
 ];
 
-export const ORIGIN_LANG_MAP: Record<string, string> = {
-  th: 'Thai',
-  id: 'Indonesian',
-  ko: 'Korean',
-  ja: 'Japanese',
-  es: 'Spanish',
-  fr: 'French',
-  de: 'German',
-  it: 'Italian',
-  sv: 'Swedish',
-  no: 'Norwegian',
-  tl: 'Filipino',
-  en: 'Atmospheric',
-  zh: 'Chinese',
-  pt: 'Portuguese',
-  ru: 'Russian',
-  pl: 'Polish',
-};
+/**
+ * Dynamic resolution of origin language display name, with fallback map for backward compatibility.
+ */
+export const ORIGIN_LANG_MAP: Record<string, string> = new Proxy(
+  {},
+  {
+    get: (_, prop: string) => getLanguageDisplayName(prop),
+  }
+);
 
 /**
  * Calibrates raw 256-d EmbeddingGemma cosine similarities (typically 0.18 - 0.55)
  * into an intuitive human-facing match percentage (75% - 98%).
  */
 export function calibrateMatchPercentage(rawSimilarity: number): number {
-  if (rawSimilarity > 1) return Math.min(99, Math.round(rawSimilarity));
-  if (rawSimilarity >= 0.70) return Math.min(99, Math.round(rawSimilarity * 100));
-  const floor = 0.18;
-  const ceiling = 0.55;
+  if (rawSimilarity > 1) {
+    return Math.min(CALIBRATION_THRESHOLDS.PERCENT_DISPLAY_TOP_CEILING, Math.round(rawSimilarity));
+  }
+  if (rawSimilarity >= CALIBRATION_THRESHOLDS.HIGH_SIMILARITY_CLAMP) {
+    return Math.min(CALIBRATION_THRESHOLDS.PERCENT_DISPLAY_TOP_CEILING, Math.round(rawSimilarity * 100));
+  }
+  const floor = CALIBRATION_THRESHOLDS.RAW_SIMILARITY_FLOOR;
+  const ceiling = CALIBRATION_THRESHOLDS.RAW_SIMILARITY_CEILING;
   const clamped = Math.max(floor, Math.min(ceiling, rawSimilarity));
   const normalized = (clamped - floor) / (ceiling - floor);
-  return Math.min(98, Math.max(72, Math.round(75 + normalized * 22)));
+  return Math.min(
+    CALIBRATION_THRESHOLDS.PERCENT_DISPLAY_MAX,
+    Math.max(
+      CALIBRATION_THRESHOLDS.PERCENT_DISPLAY_MIN,
+      Math.round(CALIBRATION_THRESHOLDS.PERCENT_DISPLAY_BASE + normalized * CALIBRATION_THRESHOLDS.CALIBRATION_SCALE)
+    )
+  );
 }
 
 export function generateDeterministicExplanation(
@@ -140,7 +148,9 @@ export function generateDeterministicExplanation(
   for (const { anchor, vector: anchorVec } of anchorsMap.values()) {
     const movieAffinity = dotProduct(movieVec, anchorVec);
     const queryAffinity = dotProduct(queryVec, anchorVec);
-    const resonance = movieAffinity * 0.65 + queryAffinity * 0.35;
+    const resonance =
+      movieAffinity * VIBE_RESONANCE_WEIGHTS.MOVIE_AFFINITY +
+      queryAffinity * VIBE_RESONANCE_WEIGHTS.QUERY_AFFINITY;
     scoredAnchors.push({ anchor, score: resonance });
   }
 
@@ -150,7 +160,7 @@ export function generateDeterministicExplanation(
   const top2 = scoredAnchors[1]?.anchor;
 
   const langCode = (movie.original_language || '').toLowerCase();
-  const originName = ORIGIN_LANG_MAP[langCode];
+  const originName = getLanguageDisplayName(langCode);
   const originPrefix = originName && langCode !== 'en' ? `${originName} ` : '';
 
   let explanation = '';
@@ -182,19 +192,19 @@ export function createCatchWarning(movie: TMDBRawMovie, runtime?: number): strin
   const count = movie.vote_count ?? 0;
   const rating = movie.vote_average ?? 0;
 
-  if (rt > 135) {
+  if (rt > RUNTIME_THRESHOLDS.SLOW_BURN_MIN) {
     return `Extended runtime (${rt} min) with deliberate, methodical slow-burn pacing.`;
   }
-  if (rt > 0 && rt < 85) {
+  if (rt > 0 && rt < RUNTIME_THRESHOLDS.BRISK_MAX) {
     return `Brisk runtime (${rt} min) that escalates quickly with minimal exposition.`;
   }
   if (lang !== 'en' && lang !== '') {
     return `Original ${movie.original_language.toUpperCase()} audio; requires patience with subtitles for maximal atmospheric immersion.`;
   }
-  if (count < 100) {
+  if (count < CATCH_THRESHOLDS.OBSCURE_VOTE_COUNT) {
     return 'Obscure cult entry with polarized audience reactions and gritty lo-fi styling.';
   }
-  if (rating >= 7.5) {
+  if (rating >= CATCH_THRESHOLDS.ACCLAIMED_RATING) {
     return 'Acclaimed atmospheric tension that relies on psychological dread over cheap jump scares.';
   }
   return 'Deliberate, slow-burn pacing that demands patience before the dread surfaces.';

@@ -8,6 +8,7 @@ import { discoveryLogs } from '$lib/schema';
 
 const DiscoverBodySchema = z.object({
   movieId: z.number().optional(),
+  seed: z.any().optional(),
   sentence: z.string().default(''),
   preset: z.enum(['all', 'cult', 'foreign']).default('all'),
   blacklist: z.array(z.number()).default([]),
@@ -18,9 +19,10 @@ const DiscoverBodySchema = z.object({
   candidateCount: z.number().optional(),
 });
 
-export const POST: RequestHandler = async ({ request }) => {
+export const POST: RequestHandler = async ({ request, url }) => {
   try {
     const user = await authenticateRequest(request);
+    const customTmdbKey = request.headers.get('x-tmdb-key') || url.searchParams.get('tmdbKey') || undefined;
 
     let rawBody: unknown;
     try {
@@ -56,6 +58,7 @@ export const POST: RequestHandler = async ({ request }) => {
 
     const {
       movieId,
+      seed,
       sentence,
       preset,
       blacklist,
@@ -66,9 +69,11 @@ export const POST: RequestHandler = async ({ request }) => {
       candidateCount: clientCandidateCount,
     } = parseResult.data;
 
+    const effectiveMovieId = movieId ?? (seed?.id ? Number(seed.id) : undefined);
+
     // Mode 1: Candidates Only (for offloading inference to Web Worker)
     if (mode === 'candidates') {
-      if (!movieId) {
+      if (!effectiveMovieId) {
         return new Response(
           JSON.stringify({ candidates: [], candidateCount: 0, fallbackReason: 'movieId is required' }),
           { status: 400, headers: { 'Content-Type': 'application/json' } }
@@ -76,12 +81,14 @@ export const POST: RequestHandler = async ({ request }) => {
       }
 
       const candidateData = await getDiscoveryCandidates({
-        movieId,
+        movieId: effectiveMovieId,
+        seed,
         sentence,
         preset,
         blacklist,
         blacklistTitles,
         targetLanguageCodes,
+        customKey: customTmdbKey,
       });
 
       return new Response(JSON.stringify(candidateData), {
@@ -95,12 +102,12 @@ export const POST: RequestHandler = async ({ request }) => {
       const hydrationMap = await hydrateWinningMovies(winningIds);
       const hydrationObj = Object.fromEntries(hydrationMap.entries());
 
-      if (movieId) {
+      if (effectiveMovieId) {
         try {
           await db.insert(discoveryLogs).values({
             userId: user ? user.id : null,
-            seedMovieId: movieId,
-            seedTitle: `Seed #${movieId}`,
+            seedMovieId: effectiveMovieId,
+            seedTitle: seed?.title || `Seed #${effectiveMovieId}`,
             sentence,
             preset,
             candidateCount: clientCandidateCount || winningIds.length,
@@ -119,7 +126,7 @@ export const POST: RequestHandler = async ({ request }) => {
     }
 
     // Mode 3: Full Server Pipeline (Fallback)
-    if (!movieId) {
+    if (!effectiveMovieId) {
       return new Response(
         JSON.stringify({ matches: [], candidateCount: 0, fallbackReason: 'movieId is required' }),
         { status: 400, headers: { 'Content-Type': 'application/json' } }
@@ -127,19 +134,21 @@ export const POST: RequestHandler = async ({ request }) => {
     }
 
     const result = await processDiscovery({
-      movieId,
+      movieId: effectiveMovieId,
+      seed,
       sentence,
       preset,
       blacklist,
       blacklistTitles,
       targetLanguageCodes,
+      customKey: customTmdbKey,
     });
 
     try {
       await db.insert(discoveryLogs).values({
         userId: user ? user.id : null,
-        seedMovieId: movieId,
-        seedTitle: result.matches[0]?.title || `Seed #${movieId}`,
+        seedMovieId: effectiveMovieId,
+        seedTitle: seed?.title || result.matches[0]?.title || `Seed #${effectiveMovieId}`,
         sentence,
         preset,
         candidateCount: result.candidateCount,

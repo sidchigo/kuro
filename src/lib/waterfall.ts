@@ -6,6 +6,10 @@ import {
   queryDiscoverMovies,
   getTmdbApiKey,
 } from './tmdb';
+import { normalizeTitle } from './textUtils';
+import { TMDB_GENRES, DISCOVERY_THRESHOLDS } from './constants';
+
+export { normalizeTitle };
 
 export interface WaterfallResult {
   candidates: TMDBRawMovie[];
@@ -27,7 +31,7 @@ function passesFilters(
   seedHasAction?: boolean
 ): boolean {
   const rating = movie.vote_average ?? 0;
-  if (rating < 4.8) return false;
+  if (rating < DISCOVERY_THRESHOLDS.MIN_VOTE_AVERAGE) return false;
 
   const count = movie.vote_count ?? 100;
   const lang = (movie.original_language || '').toLowerCase();
@@ -35,7 +39,10 @@ function passesFilters(
 
   // Exclude pure Action (28) or Adventure (12) blockbusters unless seed is action
   if (!seedHasAction && Array.isArray(movie.genre_ids)) {
-    if (movie.genre_ids.includes(28) || movie.genre_ids.includes(12)) {
+    if (
+      movie.genre_ids.includes(TMDB_GENRES.ACTION) ||
+      movie.genre_ids.includes(TMDB_GENRES.ADVENTURE)
+    ) {
       return false;
     }
   }
@@ -53,13 +60,13 @@ function passesFilters(
   }
 
   if (preset === 'cult') {
-    return count >= 35 && count <= 1500;
+    return (
+      count >= DISCOVERY_THRESHOLDS.MIN_VOTE_COUNT &&
+      count <= DISCOVERY_THRESHOLDS.CULT_MAX_VOTE_COUNT
+    );
   }
-  return count >= 35;
+  return count >= DISCOVERY_THRESHOLDS.MIN_VOTE_COUNT;
 }
-
-import { normalizeTitle } from './textUtils';
-export { normalizeTitle };
 
 /**
  * Executes Deterministic TMDB Waterfall
@@ -135,12 +142,12 @@ export async function executeWaterfall(
   }
 
   // --- TIER 2: Broader Horror Discovery (gather ~30-50 candidates) ---
-  if (candidateMap.size < 35 && apiKey) {
+  if (candidateMap.size < DISCOVERY_THRESHOLDS.CANDIDATE_POOL_TARGET && apiKey) {
     tiersReached.push(2);
     try {
       const broaderMovies1 = await queryDiscoverMovies(preset, targetLanguageCodes, apiKey, 1);
       addMovies(broaderMovies1);
-      if (candidateMap.size < 35) {
+      if (candidateMap.size < DISCOVERY_THRESHOLDS.CANDIDATE_POOL_TARGET) {
         const broaderMovies2 = await queryDiscoverMovies(preset, targetLanguageCodes, apiKey, 2);
         addMovies(broaderMovies2);
       }
@@ -150,7 +157,10 @@ export async function executeWaterfall(
   }
 
   // Gather ~30-50 horror/thriller candidates (cap at 50)
-  const finalCandidates = Array.from(candidateMap.values()).slice(0, 50);
+  const finalCandidates = Array.from(candidateMap.values()).slice(
+    0,
+    DISCOVERY_THRESHOLDS.MAX_CANDIDATE_POOL
+  );
 
   return {
     candidates: finalCandidates,

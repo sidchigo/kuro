@@ -66,6 +66,7 @@ async function runWorkerPipeline(
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       movieId: seed.id,
+      seed,
       sentence: trimmedSentence,
       preset,
       blacklist: blacklistIds,
@@ -204,6 +205,7 @@ export async function runDiscovery({
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         movieId: seed.id,
+        seed,
         sentence: trimmedSentence,
         preset,
         blacklist: blacklistIds,

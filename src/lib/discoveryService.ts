@@ -1,5 +1,6 @@
 import type { DiscoverRequest, DiscoverResponse, HorrorMatch, TMDBRawMovie, SeedMovie } from './types';
 import { fetchSeedMovieDetails, hydrateWinningMovies, TMDB_IMAGE_BASE } from './tmdb';
+import { DEFAULT_SEED } from './defaults';
 import { executeWaterfall, normalizeTitle } from './waterfall';
 import {
   formatUserQuery,
@@ -17,34 +18,13 @@ import {
   generateDeterministicExplanation,
   calibrateMatchPercentage,
 } from './matchFormatters';
+import {
+  LANGUAGE_NAME_MAP,
+  DISCOVERY_THRESHOLDS,
+  RUNTIME_THRESHOLDS,
+} from './constants';
 
 export { createPitch, createCatchWarning };
-
-const LANGUAGE_NAME_MAP: Record<string, string> = {
-  indonesian: 'id',
-  indonesia: 'id',
-  thai: 'th',
-  thailand: 'th',
-  korean: 'ko',
-  korea: 'ko',
-  japanese: 'ja',
-  japan: 'ja',
-  spanish: 'es',
-  spain: 'es',
-  mexican: 'es',
-  french: 'fr',
-  france: 'fr',
-  german: 'de',
-  germany: 'de',
-  italian: 'it',
-  italy: 'it',
-  swedish: 'sv',
-  sweden: 'sv',
-  norwegian: 'no',
-  norway: 'no',
-  tagalog: 'tl',
-  filipino: 'tl',
-};
 
 function extractLanguageCodes(sentence: string, explicitCodes?: string[]): string[] | undefined {
   if (explicitCodes && explicitCodes.length > 0) return explicitCodes;
@@ -83,7 +63,25 @@ export async function getDiscoveryCandidates(request: DiscoverRequest): Promise<
 }> {
   const { movieId, sentence = '', preset = 'all', blacklist = [], blacklistTitles = [] } = request;
 
-  const seed = await fetchSeedMovieDetails(movieId);
+  let seed: SeedMovie | null = null;
+  if (request.seed && Number(request.seed.id) === Number(movieId)) {
+    seed = request.seed;
+  } else if (movieId === DEFAULT_SEED.id) {
+    seed = DEFAULT_SEED;
+  }
+
+  if (!seed) {
+    seed = await fetchSeedMovieDetails(movieId, request.customKey);
+  }
+
+  if (!seed && movieId === DEFAULT_SEED.id) {
+    seed = DEFAULT_SEED;
+  }
+
+  if (!seed && request.seed && Number(request.seed.id) === Number(movieId)) {
+    seed = request.seed;
+  }
+
   if (!seed) {
     return {
       seed: null,
@@ -102,7 +100,7 @@ export async function getDiscoveryCandidates(request: DiscoverRequest): Promise<
     preset,
     blacklist,
     targetLanguageCodes,
-    undefined,
+    request.customKey,
     blacklistTitles
   );
 
@@ -121,9 +119,9 @@ export async function getDiscoveryCandidates(request: DiscoverRequest): Promise<
       if (origNorm && blacklistTitleSet.has(origNorm)) return false;
     }
     const rating = c.vote_average ?? 0;
-    if (rating < 4.8) return false;
+    if (rating < DISCOVERY_THRESHOLDS.MIN_VOTE_AVERAGE) return false;
     const count = c.vote_count ?? 0;
-    if (count < 35) return false;
+    if (count < DISCOVERY_THRESHOLDS.MIN_VOTE_COUNT) return false;
     return true;
   });
 
@@ -207,7 +205,10 @@ export async function processDiscovery(request: DiscoverRequest): Promise<Discov
   const aboveThreshold = scored.filter(
     (s) => s.similarity >= EMBEDDING_CONFIG.minSimilarityThreshold
   );
-  const winningScored = (aboveThreshold.length > 0 ? aboveThreshold : scored).slice(0, 3);
+  const winningScored = (aboveThreshold.length > 0 ? aboveThreshold : scored).slice(
+    0,
+    DISCOVERY_THRESHOLDS.WINNING_MATCHES_COUNT
+  );
 
   // Hydrate external_ids (imdb_id), runtime, and director in parallel
   const winningIds = winningScored.map((s) => s.movie.id);
@@ -223,7 +224,7 @@ export async function processDiscovery(request: DiscoverRequest): Promise<Discov
       extra?.posterPath !== undefined && extra?.posterPath !== null
         ? extra.posterPath
         : raw.poster_path ?? null;
-    const runtime = extra?.runtime || raw.runtime || 95;
+    const runtime = extra?.runtime || raw.runtime || RUNTIME_THRESHOLDS.DEFAULT_FALLBACK;
     const movieVec = vectorMap.get(raw.id)!;
     const { explanation, topThemes } = generateDeterministicExplanation(
       raw,

@@ -70,11 +70,13 @@ export interface MovieSearchResult {
 
 export interface DiscoverRequest {
   movieId: number;
+  seed?: SeedMovie;
   sentence: string;
   preset: Preset;
   blacklist: number[];
   blacklistTitles?: string[];
   targetLanguageCodes?: string[];
+  customKey?: string;
 }
 
 export interface HorrorMatch {

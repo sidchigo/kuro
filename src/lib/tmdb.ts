@@ -1,11 +1,19 @@
 import { env } from '$env/dynamic/private';
 import type { Preset, SeedMovie, MovieSearchResult, TMDBRawMovie } from './types';
-import { TMDB_IMAGE_BASE } from './constants';
+import {
+  TMDB_IMAGE_BASE,
+  TMDB_BASE_URL,
+  TMDB_GENRES,
+  DISCOVERY_THRESHOLDS,
+  RUNTIME_THRESHOLDS,
+} from './constants';
 import { tmdbFetch } from './tmdbFetch';
+import { DEFAULT_SEED } from './defaults';
 
 export { TMDB_IMAGE_BASE };
 
-const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
+const seedMovieCache = new Map<number, SeedMovie>();
+seedMovieCache.set(DEFAULT_SEED.id, DEFAULT_SEED);
 
 export function getTmdbApiKey(customKey?: string): string | undefined {
   if (typeof customKey === 'string' && customKey.trim().length > 5) {
@@ -57,9 +65,9 @@ export async function searchTmdbMovies(query: string, customKey?: string): Promi
       .filter((m) => {
         // Kuro is strictly niche horror: require horror genre (27)
         if (!m.genre_ids || m.genre_ids.length === 0) return false;
-        return m.genre_ids.includes(27);
+        return m.genre_ids.includes(TMDB_GENRES.HORROR);
       })
-      .slice(0, 10)
+      .slice(0, DISCOVERY_THRESHOLDS.DEFAULT_SEARCH_LIMIT)
       .map((m) => ({
         id: m.id,
         title: m.title,
@@ -81,9 +89,17 @@ export async function searchTmdbMovies(query: string, customKey?: string): Promi
  * GET /api/search?id={movieId}
  */
 export async function fetchSeedMovieDetails(movieId: number, customKey?: string): Promise<SeedMovie | null> {
+  const cached = seedMovieCache.get(movieId);
+  if (cached) {
+    return cached;
+  }
+
   const apiKey = getTmdbApiKey(customKey);
 
   if (!apiKey) {
+    if (movieId === DEFAULT_SEED.id) {
+      return DEFAULT_SEED;
+    }
     console.warn('[TMDB] TMDB_API_KEY is not configured.');
     return null;
   }
@@ -96,13 +112,13 @@ export async function fetchSeedMovieDetails(movieId: number, customKey?: string)
     const keywords = (data.keywords?.keywords || []).map((k) => k.name);
     const imdbId = data.external_ids?.imdb_id;
 
-    return {
+    const seed: SeedMovie = {
       id: data.id,
       title: data.title,
       originalTitle: data.original_title,
       year: data.release_date ? parseInt(data.release_date.split('-')[0], 10) : 0,
       originalLanguage: data.original_language?.toUpperCase() || 'EN',
-      runtime: data.runtime || 90,
+      runtime: data.runtime || RUNTIME_THRESHOLDS.SEED_DEFAULT_FALLBACK,
       director: director || 'Unknown',
       overview: data.overview || 'No synopsis recorded.',
       posterUrl: data.poster_path ? `${TMDB_IMAGE_BASE}${data.poster_path}` : undefined,
@@ -111,7 +127,12 @@ export async function fetchSeedMovieDetails(movieId: number, customKey?: string)
       keywords: keywords.length > 0 ? keywords : ['horror', 'supernatural'],
       imdbId,
     };
+    seedMovieCache.set(movieId, seed);
+    return seed;
   } catch (err) {
+    if (movieId === DEFAULT_SEED.id) {
+      return DEFAULT_SEED;
+    }
     console.error('[TMDB] Movie details fetch error:', err);
     return null;
   }
@@ -129,8 +150,9 @@ export async function fetchRandomHorrorMovie(customKey?: string): Promise<SeedMo
   }
 
   try {
-    const randomPage = Math.floor(Math.random() * 40) + 1;
-    const discoverUrl = `${TMDB_BASE_URL}/discover/movie?api_key=${apiKey}&with_genres=27&vote_count.gte=50&vote_average.gte=4.5&sort_by=popularity.desc&page=${randomPage}`;
+    const randomPage =
+      Math.floor(Math.random() * DISCOVERY_THRESHOLDS.RANDOM_POOL_PAGE_LIMIT) + 1;
+    const discoverUrl = `${TMDB_BASE_URL}/discover/movie?api_key=${apiKey}&with_genres=${TMDB_GENRES.HORROR}&vote_count.gte=${DISCOVERY_THRESHOLDS.RANDOM_MIN_VOTES}&vote_average.gte=${DISCOVERY_THRESHOLDS.RANDOM_MIN_RATING}&sort_by=popularity.desc&page=${randomPage}`;
     const data = await tmdbFetch<any>(discoverUrl);
     const results = (data.results || []) as Array<{ id: number }>;
     if (results.length === 0) return null;
@@ -146,7 +168,10 @@ export async function fetchRandomHorrorMovie(customKey?: string): Promise<SeedMo
 /**
  * Fetches a buffered batch of random horror movies in a single TMDB discover call (e.g. 15 films)
  */
-export async function fetchRandomHorrorBatch(count = 15, customKey?: string): Promise<SeedMovie[]> {
+export async function fetchRandomHorrorBatch(
+  count: number = DISCOVERY_THRESHOLDS.RANDOM_BATCH_COUNT,
+  customKey?: string
+): Promise<SeedMovie[]> {
   const apiKey = getTmdbApiKey(customKey);
   if (!apiKey) {
     console.warn('[TMDB] TMDB_API_KEY is not configured.');
@@ -154,8 +179,9 @@ export async function fetchRandomHorrorBatch(count = 15, customKey?: string): Pr
   }
 
   try {
-    const randomPage = Math.floor(Math.random() * 40) + 1;
-    const discoverUrl = `${TMDB_BASE_URL}/discover/movie?api_key=${apiKey}&with_genres=27&vote_count.gte=50&vote_average.gte=4.5&sort_by=popularity.desc&page=${randomPage}`;
+    const randomPage =
+      Math.floor(Math.random() * DISCOVERY_THRESHOLDS.RANDOM_POOL_PAGE_LIMIT) + 1;
+    const discoverUrl = `${TMDB_BASE_URL}/discover/movie?api_key=${apiKey}&with_genres=${TMDB_GENRES.HORROR}&vote_count.gte=${DISCOVERY_THRESHOLDS.RANDOM_MIN_VOTES}&vote_average.gte=${DISCOVERY_THRESHOLDS.RANDOM_MIN_RATING}&sort_by=popularity.desc&page=${randomPage}`;
     const data = await tmdbFetch<any>(discoverUrl);
     const results = (data.results || []) as Array<{
       id: number;
@@ -171,7 +197,7 @@ export async function fetchRandomHorrorBatch(count = 15, customKey?: string): Pr
     }>;
 
     return results
-      .filter((m) => m.poster_path && (!m.genre_ids || m.genre_ids.includes(27)))
+      .filter((m) => m.poster_path && (!m.genre_ids || m.genre_ids.includes(TMDB_GENRES.HORROR)))
       .slice(0, count)
       .map((m) => ({
         id: m.id,
@@ -179,7 +205,7 @@ export async function fetchRandomHorrorBatch(count = 15, customKey?: string): Pr
         originalTitle: m.original_title !== m.title ? m.original_title : undefined,
         year: m.release_date ? parseInt(m.release_date.split('-')[0], 10) : 0,
         originalLanguage: m.original_language?.toUpperCase() || 'EN',
-        runtime: 90,
+        runtime: RUNTIME_THRESHOLDS.SEED_DEFAULT_FALLBACK,
         director: 'Unknown',
         overview: m.overview || 'No synopsis recorded.',
         posterUrl: m.poster_path ? `${TMDB_IMAGE_BASE}${m.poster_path}` : undefined,
@@ -230,7 +256,7 @@ export function getPresetQueryParams(
   targetLanguageCodes?: string[]
 ): Record<string, string> {
   const params: Record<string, string> = {
-    'vote_average.gte': '4.8',
+    'vote_average.gte': String(DISCOVERY_THRESHOLDS.MIN_VOTE_AVERAGE),
   };
 
   if (targetLanguageCodes && targetLanguageCodes.length > 0) {
@@ -240,10 +266,10 @@ export function getPresetQueryParams(
   }
 
   if (preset === 'cult') {
-    params['vote_count.gte'] = '35';
-    params['vote_count.lte'] = '1500';
+    params['vote_count.gte'] = String(DISCOVERY_THRESHOLDS.MIN_VOTE_COUNT);
+    params['vote_count.lte'] = String(DISCOVERY_THRESHOLDS.CULT_MAX_VOTE_COUNT);
   } else {
-    params['vote_count.gte'] = '35';
+    params['vote_count.gte'] = String(DISCOVERY_THRESHOLDS.MIN_VOTE_COUNT);
   }
 
   // Prevent unreleased/future titles
@@ -269,7 +295,7 @@ export async function queryDiscoverByKeywords(
     const presetParams = getPresetQueryParams(preset, targetLanguageCodes);
     const url = new URL(`${TMDB_BASE_URL}/discover/movie`);
     url.searchParams.set('api_key', apiKey);
-    url.searchParams.set('with_genres', '27'); // Horror
+    url.searchParams.set('with_genres', String(TMDB_GENRES.HORROR));
     url.searchParams.set('with_keywords', keywordIds.join('|')); // OR pipe logic
     url.searchParams.set('sort_by', 'popularity.desc');
     url.searchParams.set('include_adult', 'false');
@@ -321,10 +347,14 @@ export async function queryRecommendationsAndSimilar(
 
     return Array.from(merged.values()).filter((m) => {
       const genres = m.genre_ids || [];
-      const isHorror = genres.includes(27);
-      const passesRating = (m.vote_average ?? 0) >= 4.8;
+      const isHorror = genres.includes(TMDB_GENRES.HORROR);
+      const passesRating = (m.vote_average ?? 0) >= DISCOVERY_THRESHOLDS.MIN_VOTE_AVERAGE;
       const count = m.vote_count ?? 0;
-      const passesCount = preset === 'cult' ? count >= 35 && count <= 1500 : count >= 35;
+      const passesCount =
+        preset === 'cult'
+          ? count >= DISCOVERY_THRESHOLDS.MIN_VOTE_COUNT &&
+            count <= DISCOVERY_THRESHOLDS.CULT_MAX_VOTE_COUNT
+          : count >= DISCOVERY_THRESHOLDS.MIN_VOTE_COUNT;
 
       const lang = (m.original_language || '').toLowerCase();
       let passesLanguage = true;
@@ -359,7 +389,7 @@ export async function queryDiscoverMovies(
     const presetParams = getPresetQueryParams(preset, targetLanguageCodes);
     const url = new URL(`${TMDB_BASE_URL}/discover/movie`);
     url.searchParams.set('api_key', apiKey);
-    url.searchParams.set('with_genres', '27');
+    url.searchParams.set('with_genres', String(TMDB_GENRES.HORROR));
     url.searchParams.set('sort_by', 'popularity.desc');
     url.searchParams.set('include_adult', 'false');
     url.searchParams.set('page', String(page));
@@ -388,7 +418,7 @@ export async function hydrateWinningMovies(
 
   if (!apiKey || movieIds.length === 0) {
     for (const id of movieIds) {
-      map.set(id, { runtime: 95, posterPath: null });
+      map.set(id, { runtime: RUNTIME_THRESHOLDS.DEFAULT_FALLBACK, posterPath: null });
     }
     return map;
   }
@@ -401,13 +431,13 @@ export async function hydrateWinningMovies(
         );
         const dir = data.credits?.crew?.find((c) => c.job === 'Director')?.name;
         map.set(id, {
-          runtime: data.runtime || 95,
+          runtime: data.runtime || RUNTIME_THRESHOLDS.DEFAULT_FALLBACK,
           imdbId: data.external_ids?.imdb_id,
           director: dir,
           posterPath: data.poster_path ?? null,
         });
       } catch {
-        map.set(id, { runtime: 95, posterPath: null });
+        map.set(id, { runtime: RUNTIME_THRESHOLDS.DEFAULT_FALLBACK, posterPath: null });
       }
     })
   );
