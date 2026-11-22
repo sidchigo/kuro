@@ -2,7 +2,6 @@
   import { onMount } from 'svelte';
   import type { PageData } from './$types';
   import type { AdminUserView, AdminStats, DiscoveryLogItem, Role } from '$lib/types';
-  import AccentSwitcher from '$lib/../components/AccentSwitcher.svelte';
 
   let { data }: { data: PageData } = $props();
 
@@ -148,15 +147,6 @@
       >
         [REFRESH]
       </button>
-      <div class="hidden md:block">
-        <AccentSwitcher />
-      </div>
-      <a
-        href="/archive"
-        class="h-9 inline-flex items-center font-mono text-xs uppercase px-3 border border-[#262629] text-[#8A8882] hover:text-[#F2EFE9] hover:border-[#8A8882] transition-colors gap-1.5"
-      >
-        <span>[ARCHIVE]</span>
-      </a>
       <a
         href="/"
         class="h-9 inline-flex items-center font-mono text-xs uppercase px-3 border border-[#262629] hover:border-accent hover:text-accent text-[#F2EFE9] transition-colors gap-1.5"

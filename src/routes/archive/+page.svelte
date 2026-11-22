@@ -2,7 +2,6 @@
   import type { PageData } from './$types';
   import { createLibraryStore } from '$lib/stores/library.svelte';
   import PosterImage from '$lib/../components/PosterImage.svelte';
-  import AccentSwitcher from '$lib/../components/AccentSwitcher.svelte';
   import { goto } from '$app/navigation';
 
   let { data }: { data: PageData } = $props();
@@ -114,7 +113,7 @@
       </nav>
     </div>
 
-    <!-- Right Actions: Filter, Accent Switcher & Return to Engine -->
+    <!-- Right Actions: Filter & Return to Engine -->
     <div class="flex items-center gap-4 shrink-0">
       <div class="relative hidden sm:block">
         <input
@@ -133,10 +132,6 @@
             ✕
           </button>
         {/if}
-      </div>
-
-      <div class="hidden md:block">
-        <AccentSwitcher />
       </div>
 
       <a
@@ -181,8 +176,8 @@
     </button>
   </nav>
 
-  <!-- Mobile Sub-Toolbar: Filter & Accent Switcher -->
-  <div class="sm:hidden border-b border-[#262629] bg-[#121214] p-3 flex flex-col gap-2.5 shrink-0">
+  <!-- Mobile Filter Strip -->
+  <div class="sm:hidden border-b border-[#262629] bg-[#121214] p-3 shrink-0">
     <div class="relative w-full">
       <input
         type="text"
@@ -200,9 +195,6 @@
           ✕
         </button>
       {/if}
-    </div>
-    <div class="flex items-center justify-between pt-1 border-t border-[#262629]/60">
-      <AccentSwitcher />
     </div>
   </div>
 

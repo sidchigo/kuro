@@ -29,7 +29,7 @@
   import PresetTrigger from "./PresetTrigger.svelte";
   import ResultsStack from "./ResultsStack.svelte";
   import RightColumn from "./RightColumn.svelte";
-  import MobileDrawer from "./MobileDrawer.svelte";
+  import AccentSwitcher from "./AccentSwitcher.svelte";
   import AuthModal from "./AuthModal.svelte";
 
   interface Props {
@@ -84,9 +84,6 @@
   let preset = $state<Preset>("all");
   let isDiscovering = $state(false);
   let discoveryResults = $state<DiscoveryResult | null>(null);
-
-  // Mobile Drawer
-  let mobileDrawerSection = $state<"plan" | "seen" | "accent" | null>(null);
 
   let sentenceCanvasRef: SentenceCanvas | undefined = $state();
   let resultsStackRef: ResultsStack | undefined = $state();
@@ -284,25 +281,8 @@
     >
       <TopBar
         {currentUser}
-        watchlistCount={library.watchlist.length}
-        seenCount={library.seenList.length}
         onOpenAuth={() => (isAuthModalOpen = true)}
         onLogout={handleLogout}
-        onToggleMobileDrawer={(section) =>
-          (mobileDrawerSection =
-            mobileDrawerSection === section ? null : section)}
-      />
-
-      <MobileDrawer
-        section={mobileDrawerSection}
-        onClose={() => (mobileDrawerSection = null)}
-        {currentUser}
-        onOpenAuth={() => (isAuthModalOpen = true)}
-        watchlist={library.sortedWatchlist}
-        seenList={library.seenList}
-        onSelectWatchlistSeed={(item) => selectSeedMovie(item.id, item)}
-        onRemoveWatchlist={(id) => currentUser && library.removeFromWatchlist(id)}
-        onUndoSeen={(id) => currentUser && library.undoSeen(id)}
       />
 
       <!-- Block 01 / SEED FILM -->
@@ -346,6 +326,15 @@
         }}
         onMarkSeen={handleToggleSeen}
       />
+
+      <!-- Mobile Theme Accent Strip -->
+      <footer class="lg:hidden mt-auto border-t border-[#262629] py-3 px-4 flex items-center justify-between bg-[#0A0A0B]">
+        <div class="flex items-center gap-1.5 text-[#8A8882] font-mono text-[10px] uppercase tracking-wider">
+          <span class="w-2 h-2 inline-block shrink-0" style="background-color: var(--accent);"></span>
+          <span>ACCENT</span>
+        </div>
+        <AccentSwitcher showLabel={false} />
+      </footer>
     </main>
 
     <!-- 3. RIGHT COLUMN: Watchlist, Recent Seeds & Watched Archive -->
