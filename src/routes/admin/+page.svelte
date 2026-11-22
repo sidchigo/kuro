@@ -97,11 +97,11 @@
 <div class="min-h-screen bg-[#0A0A0B] flex flex-col select-none text-[#F2EFE9]">
   <!-- Top Header Bar -->
   <header
-    class="h-16 px-6 lg:px-12 border-b border-[#262629] bg-[#0A0A0B] sticky top-0 z-30 flex items-center justify-between gap-4 shrink-0"
+    class="h-12 sm:h-16 px-3 sm:px-6 lg:px-12 border-b border-[#262629] bg-[#0A0A0B] sticky top-0 z-30 flex items-center justify-between gap-3 shrink-0"
   >
-    <div class="flex items-center gap-6 min-w-0">
+    <div class="flex items-center gap-4 sm:gap-6 min-w-0">
       <div class="flex items-baseline gap-2 shrink-0">
-        <a href="/" class="font-serif text-2xl font-normal text-[#F2EFE9] hover:opacity-80 transition-opacity">
+        <a href="/" class="font-serif text-xl sm:text-2xl font-normal text-[#F2EFE9] hover:opacity-80 transition-opacity">
           kuro<span class="text-accent" style="color: var(--accent);">.</span>
         </a>
         <span class="font-mono text-xs uppercase text-[#8A8882] tracking-widest hidden sm:inline">
@@ -133,7 +133,7 @@
     </div>
 
     <!-- Right Actions: Refresh, Archive & Return to Discovery Engine -->
-    <div class="flex items-center gap-3 shrink-0">
+    <div class="flex items-center gap-2 sm:gap-3 shrink-0">
       {#if isLoading}
         <span class="font-mono text-[10px] uppercase tracking-widest text-[#8A8882] animate-pulse">
           SYNCING...
@@ -143,13 +143,13 @@
         type="button"
         onclick={loadData}
         disabled={isLoading}
-        class="hidden sm:inline-flex items-center h-9 font-mono text-[10px] uppercase tracking-wider px-3 border border-[#262629] text-[#8A8882] hover:text-[#F2EFE9] hover:border-[#F2EFE9] disabled:opacity-40 transition-colors"
+        class="hidden sm:inline-flex items-center h-8 sm:h-9 font-mono text-[10px] uppercase tracking-wider px-3 border border-[#262629] text-[#8A8882] hover:text-[#F2EFE9] hover:border-[#F2EFE9] disabled:opacity-40 transition-colors"
       >
         [REFRESH]
       </button>
       <a
         href="/"
-        class="h-9 inline-flex items-center font-mono text-xs uppercase px-3 border border-[#262629] hover:border-accent hover:text-accent text-[#F2EFE9] transition-colors gap-1.5"
+        class="h-8 sm:h-9 inline-flex items-center font-mono text-xs uppercase px-2.5 sm:px-3 border border-[#262629] hover:border-accent hover:text-accent text-[#F2EFE9] transition-colors gap-1.5"
       >
         <span>[← ENGINE]</span>
       </a>
@@ -158,14 +158,14 @@
 
   <!-- Mobile Segmented Navigation Strip -->
   <nav
-    class="md:hidden grid grid-cols-3 border-b border-[#262629] divide-x divide-[#262629] bg-[#0A0A0B] font-mono text-[10px] tracking-wider uppercase shrink-0 sticky top-16 z-20"
+    class="md:hidden grid grid-cols-3 border-b border-[#262629] divide-x divide-[#262629] bg-[#0A0A0B] font-mono text-[10px] tracking-wider uppercase shrink-0 sticky top-12 z-20"
   >
     {#each tabs as t (t)}
       {@const isActive = activeTab === t}
       <button
         type="button"
         onclick={() => (activeTab = t)}
-        class="h-10 transition-colors {isActive
+        class="h-9 transition-colors {isActive
           ? 'bg-[#F2EFE9] text-[#0A0A0B] font-bold'
           : 'bg-transparent text-[#8A8882] hover:text-[#F2EFE9]'}"
       >
@@ -177,7 +177,7 @@
   <!-- Action Message Alert -->
   {#if actionMessage}
     <div
-      class="px-6 lg:px-12 py-2.5 border-b border-[#262629] bg-[#121214] font-mono text-[11px] text-accent flex items-center justify-between shrink-0"
+      class="px-3 sm:px-6 lg:px-12 py-2 border-b border-[#262629] bg-[#121214] font-mono text-[11px] text-accent flex items-center justify-between shrink-0"
     >
       <span>{actionMessage}</span>
       <button
@@ -192,12 +192,12 @@
   {/if}
 
   <!-- Main Content Area -->
-  <main class="flex-1 p-6 lg:p-12 font-mono text-xs">
+  <main class="flex-1 px-3 py-4 sm:p-6 lg:p-12 font-mono text-xs">
     <div class="max-w-7xl mx-auto">
       <!-- TAB 1: USERS DIRECTORY -->
       {#if activeTab === 'users'}
         <div>
-          <div class="flex items-baseline justify-between mb-6 pb-2 border-b border-[#262629]">
+          <div class="flex items-baseline justify-between mb-3 sm:mb-6 pb-2 border-b border-[#262629]">
             <span class="font-mono text-xs uppercase tracking-widest text-[#8A8882]">
               USERS // {users.length} {users.length === 1 ? 'ACCOUNT' : 'ACCOUNTS'}
             </span>

@@ -81,8 +81,8 @@
   }
 </script>
 
-<section class="p-5 border-b border-[#262629] relative bg-[#0A0A0B]">
-  <div class="flex items-center justify-between mb-2.5">
+<section class="p-3.5 sm:p-5 border-b border-[#262629] relative bg-[#0A0A0B]">
+  <div class="flex items-center justify-between mb-2">
     <span class="font-mono text-[10px] tracking-widest text-[#8A8882] uppercase">
       01 / STARTING FILM
     </span>
@@ -90,7 +90,7 @@
 
   {#if !selectedSeed}
     <!-- Default Search & Quick Seed Chips -->
-    <div bind:this={searchContainerEl} class="space-y-3">
+    <div bind:this={searchContainerEl} class="space-y-2.5 sm:space-y-3">
       <div class="relative">
         <input
           type="text"
@@ -99,7 +99,7 @@
             if (searchResults.length > 0) showDropdown = true;
           }}
           placeholder="Search horror title (e.g. Incantation, Cure)..."
-          class="w-full h-11 bg-transparent border border-[#262629] pl-3 pr-9 font-mono text-xs text-[#F2EFE9] placeholder:text-[#8A8882] focus:border-[#F2EFE9] focus:outline-none transition-colors"
+          class="w-full h-10 sm:h-11 bg-transparent border border-[#262629] pl-3 pr-9 font-mono text-xs text-[#F2EFE9] placeholder:text-[#8A8882] focus:border-[#F2EFE9] focus:outline-none transition-colors"
         />
         {#if isSearching}
           <span
@@ -126,7 +126,7 @@
       <!-- 250ms Debounced Dropdown Overlay -->
       {#if showDropdown && searchResults.length > 0}
         <div
-          class="absolute left-5 right-5 top-[76px] z-40 bg-[#0A0A0B] border border-[#262629] divide-y divide-[#262629] max-h-72 overflow-y-auto"
+          class="absolute left-3.5 right-3.5 sm:left-5 sm:right-5 top-[68px] sm:top-[76px] z-40 bg-[#0A0A0B] border border-[#262629] divide-y divide-[#262629] max-h-72 overflow-y-auto"
         >
           {#each searchResults as item (item.id)}
             <button

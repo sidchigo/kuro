@@ -67,11 +67,11 @@
 <div class="min-h-screen bg-[#0A0A0B] flex flex-col select-none text-[#F2EFE9]">
   <!-- Top Header Bar -->
   <header
-    class="h-16 px-6 lg:px-12 border-b border-[#262629] bg-[#0A0A0B] sticky top-0 z-30 flex items-center justify-between gap-4 shrink-0"
+    class="h-12 sm:h-16 px-3 sm:px-6 lg:px-12 border-b border-[#262629] bg-[#0A0A0B] sticky top-0 z-30 flex items-center justify-between gap-3 shrink-0"
   >
-    <div class="flex items-center gap-6 min-w-0">
+    <div class="flex items-center gap-4 sm:gap-6 min-w-0">
       <div class="flex items-baseline gap-2 shrink-0">
-        <a href="/" class="font-serif text-2xl font-normal text-[#F2EFE9] hover:opacity-80 transition-opacity">
+        <a href="/" class="font-serif text-xl sm:text-2xl font-normal text-[#F2EFE9] hover:opacity-80 transition-opacity">
           kuro<span class="text-accent" style="color: var(--accent);">.</span>
         </a>
         <span class="font-mono text-xs uppercase text-[#8A8882] tracking-widest hidden sm:inline">
@@ -114,7 +114,7 @@
     </div>
 
     <!-- Right Actions: Filter & Return to Engine -->
-    <div class="flex items-center gap-4 shrink-0">
+    <div class="flex items-center gap-3 sm:gap-4 shrink-0">
       <div class="relative hidden sm:block">
         <input
           type="text"
@@ -136,7 +136,7 @@
 
       <a
         href="/"
-        class="h-9 inline-flex items-center font-mono text-xs uppercase px-3 border border-[#262629] hover:border-accent hover:text-accent text-[#F2EFE9] transition-colors gap-1.5"
+        class="h-8 sm:h-9 inline-flex items-center font-mono text-xs uppercase px-2.5 sm:px-3 border border-[#262629] hover:border-accent hover:text-accent text-[#F2EFE9] transition-colors gap-1.5"
       >
         <span>[← ENGINE]</span>
       </a>
@@ -145,12 +145,12 @@
 
   <!-- Mobile Segmented Navigation Strip -->
   <nav
-    class="sm:hidden grid grid-cols-3 border-b border-[#262629] divide-x divide-[#262629] bg-[#0A0A0B] font-mono text-[10px] tracking-wider uppercase shrink-0 sticky top-16 z-20"
+    class="sm:hidden grid grid-cols-3 border-b border-[#262629] divide-x divide-[#262629] bg-[#0A0A0B] font-mono text-[10px] tracking-wider uppercase shrink-0 sticky top-12 z-20"
   >
     <button
       type="button"
       onclick={() => (activeTab = 'watchlist')}
-      class="h-10 transition-colors {activeTab === 'watchlist'
+      class="h-9 transition-colors {activeTab === 'watchlist'
         ? 'bg-[#F2EFE9] text-[#0A0A0B] font-bold'
         : 'bg-transparent text-[#8A8882] hover:text-[#F2EFE9]'}"
     >
@@ -159,7 +159,7 @@
     <button
       type="button"
       onclick={() => (activeTab = 'seen')}
-      class="h-10 transition-colors {activeTab === 'seen'
+      class="h-9 transition-colors {activeTab === 'seen'
         ? 'bg-[#F2EFE9] text-[#0A0A0B] font-bold'
         : 'bg-transparent text-[#8A8882] hover:text-[#F2EFE9]'}"
     >
@@ -168,7 +168,7 @@
     <button
       type="button"
       onclick={() => (activeTab = 'recent')}
-      class="h-10 transition-colors {activeTab === 'recent'
+      class="h-9 transition-colors {activeTab === 'recent'
         ? 'bg-[#F2EFE9] text-[#0A0A0B] font-bold'
         : 'bg-transparent text-[#8A8882] hover:text-[#F2EFE9]'}"
     >
@@ -177,7 +177,7 @@
   </nav>
 
   <!-- Mobile Filter Strip -->
-  <div class="sm:hidden border-b border-[#262629] bg-[#121214] p-3 shrink-0">
+  <div class="sm:hidden border-b border-[#262629] bg-[#121214] px-3 py-2 shrink-0">
     <div class="relative w-full">
       <input
         type="text"
@@ -199,33 +199,33 @@
   </div>
 
   <!-- Main Content Area -->
-  <main class="flex-1 p-6 lg:p-12">
+  <main class="flex-1 px-3 py-4 sm:p-6 lg:p-12">
     <div class="max-w-7xl mx-auto">
       <!-- 1. PLAN TO WATCH TAB -->
       {#if activeTab === 'watchlist'}
         <div>
-          <div class="flex items-baseline justify-between mb-6 pb-2 border-b border-[#262629]">
+          <div class="flex items-baseline justify-between mb-3 sm:mb-6 pb-2 border-b border-[#262629]">
             <span class="font-mono text-xs uppercase tracking-widest text-[#8A8882]">
               PLAN TO WATCH // {filteredWatchlist.length} {filteredWatchlist.length === 1 ? 'ENTRY' : 'ENTRIES'}
             </span>
           </div>
 
           {#if filteredWatchlist.length === 0}
-            <div class="py-24 text-center border border-[#262629] bg-[#0A0A0B]">
-              <p class="font-serif text-2xl text-[#8A8882]">
+            <div class="py-12 sm:py-24 text-center border border-[#262629] bg-[#0A0A0B]">
+              <p class="font-serif text-xl sm:text-2xl text-[#8A8882]">
                 {filterQuery ? 'NO MATCHING SAVED FILMS FOUND' : 'YOUR WATCHLIST IS EMPTY'}
               </p>
-              <p class="font-mono text-xs text-[#8A8882]/60 uppercase tracking-widest mt-2">
+              <p class="font-mono text-[10px] sm:text-xs text-[#8A8882]/60 uppercase tracking-widest mt-2">
                 {filterQuery
                   ? 'TRY CLEARING YOUR SEARCH FILTER'
                   : 'CLICK [+ PLAN] ON ANY DISCOVERY RESULT TO SAVE IT HERE'}
               </p>
             </div>
           {:else}
-            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2.5 sm:gap-4">
               {#each filteredWatchlist as item (item.id)}
                 <div
-                  class="border border-[#262629] bg-[#0A0A0B] hover:border-[#8A8882] transition-colors flex flex-col group p-2.5"
+                  class="border border-[#262629] bg-[#0A0A0B] hover:border-[#8A8882] transition-colors flex flex-col group p-2 sm:p-2.5"
                 >
                   <div class="aspect-[2/3] w-full bg-[#121214] border border-[#262629] overflow-hidden relative">
                     <PosterImage
@@ -283,7 +283,7 @@
       <!-- 2. ALREADY SEEN TAB -->
       {#if activeTab === 'seen'}
         <div>
-          <div class="flex items-baseline justify-between mb-6 pb-2 border-b border-[#262629]">
+          <div class="flex items-baseline justify-between mb-3 sm:mb-6 pb-2 border-b border-[#262629]">
             <span class="font-mono text-xs uppercase tracking-widest text-[#8A8882]">
               ALREADY SEEN // {filteredSeenList.length} {filteredSeenList.length === 1 ? 'ENTRY' : 'ENTRIES'}
             </span>
@@ -303,19 +303,19 @@
           </div>
 
           {#if filteredSeenList.length === 0}
-            <div class="py-24 text-center border border-[#262629] bg-[#0A0A0B]">
-              <p class="font-serif text-2xl text-[#8A8882]">
+            <div class="py-12 sm:py-24 text-center border border-[#262629] bg-[#0A0A0B]">
+              <p class="font-serif text-xl sm:text-2xl text-[#8A8882]">
                 {filterQuery ? 'NO MATCHING SEEN FILMS FOUND' : 'NO SEEN FILMS RECORDED'}
               </p>
-              <p class="font-mono text-xs text-[#8A8882]/60 uppercase tracking-widest mt-2">
+              <p class="font-mono text-[10px] sm:text-xs text-[#8A8882]/60 uppercase tracking-widest mt-2">
                 FILMS MARKED AS SEEN ARE AUTOMATICALLY BLACKLISTED FROM FUTURE RECOMMENDATIONS
               </p>
             </div>
           {:else}
-            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2.5 sm:gap-4">
               {#each filteredSeenList as item (item.id)}
                 <div
-                  class="border border-[#262629] bg-[#0A0A0B] hover:border-[#8A8882] transition-colors flex flex-col group p-2.5"
+                  class="border border-[#262629] bg-[#0A0A0B] hover:border-[#8A8882] transition-colors flex flex-col group p-2 sm:p-2.5"
                 >
                   <div class="aspect-[2/3] w-full bg-[#121214] border border-[#262629] overflow-hidden relative">
                     <PosterImage
@@ -397,21 +397,21 @@
       <!-- 3. RECENT SEARCHES TAB -->
       {#if activeTab === 'recent'}
         <div>
-          <div class="flex items-baseline justify-between mb-6 pb-2 border-b border-[#262629]">
+          <div class="flex items-baseline justify-between mb-3 sm:mb-6 pb-2 border-b border-[#262629]">
             <span class="font-mono text-xs uppercase tracking-widest text-[#8A8882]">
               RECENT SEARCHES // {filteredRecentSeeds.length} {filteredRecentSeeds.length === 1 ? 'ENTRY' : 'ENTRIES'}
             </span>
           </div>
 
           {#if filteredRecentSeeds.length === 0}
-            <div class="py-24 text-center border border-[#262629] bg-[#0A0A0B]">
-              <p class="font-serif text-2xl text-[#8A8882]">NO RECENT SEARCHES RECORDED</p>
+            <div class="py-12 sm:py-24 text-center border border-[#262629] bg-[#0A0A0B]">
+              <p class="font-serif text-xl sm:text-2xl text-[#8A8882]">NO RECENT SEARCHES RECORDED</p>
             </div>
           {:else}
-            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 sm:gap-4">
               {#each filteredRecentSeeds as seed (seed.id)}
                 <div
-                  class="border border-[#262629] p-4 bg-[#0A0A0B] hover:border-[#8A8882] transition-colors flex flex-col justify-between"
+                  class="border border-[#262629] p-3 sm:p-4 bg-[#0A0A0B] hover:border-[#8A8882] transition-colors flex flex-col justify-between"
                 >
                   <div>
                     <div class="flex items-start justify-between gap-2">

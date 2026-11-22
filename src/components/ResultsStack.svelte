@@ -79,7 +79,7 @@
             </div>
 
             <!-- Right: Title, Metadata, Grounded Pitch, Catch Caveat & Actions -->
-            <div class="p-3.5 flex flex-col justify-between flex-1 min-w-0">
+            <div class="p-3 sm:p-3.5 flex flex-col justify-between flex-1 min-w-0">
               <div>
                 <h2 class="font-serif text-xl font-normal leading-tight text-[#F2EFE9]">
                   {movie.title}
@@ -102,14 +102,14 @@
                 {/if}
 
                 <!-- 2-Sentence Grounded Pitch -->
-                <p class="font-sans text-xs text-[#F2EFE9]/90 leading-relaxed mt-2.5">
+                <p class="font-sans text-xs text-[#F2EFE9]/90 leading-relaxed mt-2 sm:mt-2.5">
                   {movie.pitch}
                 </p>
               </div>
 
               <!-- Bottom Action Bar -->
               <div
-                class="mt-3 pt-2.5 border-t border-[#262629] flex items-center justify-between gap-2 flex-wrap font-mono text-[10px]"
+                class="mt-2.5 sm:mt-3 pt-2 sm:pt-2.5 border-t border-[#262629] flex items-center justify-between gap-2 flex-wrap font-mono text-[10px]"
               >
                 <!-- Outbound Links -->
                 <div class="flex items-center gap-2 text-[#8A8882]">
