@@ -230,12 +230,12 @@
 
   <!-- Mobile Filter & Layout Toggle Strip -->
   <div class="sm:hidden border-b border-[#262629] bg-[#121214] px-3 py-2 shrink-0 flex items-center gap-2">
-    <div class="relative flex-1">
+    <div class="relative flex-1 h-8">
       <input
         type="text"
         bind:value={filterQuery}
         placeholder="FILTER BY TITLE..."
-        class="w-full h-8 bg-[#0A0A0B] border border-[#262629] pl-2.5 pr-8 font-mono text-[10px] uppercase text-[#F2EFE9] placeholder:text-[#8A8882] focus:border-[#F2EFE9] focus:outline-none transition-colors"
+        class="w-full h-full bg-[#0A0A0B] border border-[#262629] pl-2.5 pr-8 font-mono text-[10px] uppercase text-[#F2EFE9] placeholder:text-[#8A8882] focus:border-[#F2EFE9] focus:outline-none transition-colors"
       />
       {#if filterQuery}
         <button
@@ -250,11 +250,11 @@
     </div>
 
     <!-- Mobile Layout Switcher: List (One by One) vs Grid (Two Column) -->
-    <div class="inline-flex items-center border border-[#262629] divide-x divide-[#262629] font-mono text-[9px] shrink-0">
+    <div class="inline-flex items-stretch h-8 border border-[#262629] divide-x divide-[#262629] font-mono text-[10px] shrink-0">
       <button
         type="button"
         onclick={() => setLayoutMode('list')}
-        class="h-8 px-2 uppercase transition-colors {layoutMode === 'list'
+        class="px-2.5 flex items-center justify-center uppercase transition-colors {layoutMode === 'list'
           ? 'bg-[#F2EFE9] text-[#0A0A0B] font-bold'
           : 'text-[#8A8882] hover:text-[#F2EFE9]'}"
         title="1-column list (one by one)"
@@ -264,7 +264,7 @@
       <button
         type="button"
         onclick={() => setLayoutMode('grid')}
-        class="h-8 px-2 uppercase transition-colors {layoutMode === 'grid'
+        class="px-2.5 flex items-center justify-center uppercase transition-colors {layoutMode === 'grid'
           ? 'bg-[#F2EFE9] text-[#0A0A0B] font-bold'
           : 'text-[#8A8882] hover:text-[#F2EFE9]'}"
         title="2-column grid"
@@ -303,26 +303,18 @@
                 {#if layoutMode === 'list'}
                   <!-- List Mode: Horizontal Ticket Card (One by One) -->
                   <div
-                    class="border border-[#262629] bg-[#0A0A0B] hover:border-[#8A8882] transition-colors flex flex-row group p-2.5 gap-3"
+                    class="relative border border-[#262629] bg-[#0A0A0B] hover:border-[#8A8882] transition-colors flex flex-row group p-2.5 gap-3"
                   >
-                    <div class="w-20 sm:w-24 shrink-0 aspect-[2/3] bg-[#121214] border border-[#262629] overflow-hidden relative">
+                    <div class="w-20 sm:w-24 shrink-0 aspect-[2/3] bg-[#121214] border border-[#262629] overflow-hidden">
                       <PosterImage
                         src={item.posterUrl}
                         alt={item.title}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         fallbackLabel="PLAN"
                       />
-                      <button
-                        type="button"
-                        onclick={() => library.removeFromWatchlist(item.id)}
-                        class="absolute top-1 right-1 w-6 h-6 bg-[#0A0A0B]/80 hover:bg-accent hover:text-[#0A0A0B] text-[#F2EFE9] border border-[#262629] flex items-center justify-center font-mono text-xs transition-colors touch-manipulation"
-                        title="Remove from watchlist"
-                      >
-                        ✕
-                      </button>
                     </div>
 
-                    <div class="flex-1 flex flex-col justify-between min-w-0">
+                    <div class="flex-1 flex flex-col justify-between min-w-0 pr-7">
                       <div>
                         <h3 class="font-serif text-base sm:text-lg leading-tight text-[#F2EFE9] line-clamp-2" title={item.title}>
                           {item.title}
@@ -351,6 +343,16 @@
                         </button>
                       </div>
                     </div>
+
+                    <!-- Top-Right Card Cross Action Button -->
+                    <button
+                      type="button"
+                      onclick={() => library.removeFromWatchlist(item.id)}
+                      class="absolute top-2 right-2 w-6 h-6 border border-[#262629] bg-[#0A0A0B] hover:bg-accent hover:text-[#0A0A0B] hover:border-accent text-[#8A8882] flex items-center justify-center font-mono text-xs transition-colors touch-manipulation"
+                      title="Remove from watchlist"
+                    >
+                      ✕
+                    </button>
                   </div>
                 {:else}
                   <!-- Grid Mode: Vertical Poster Card -->
@@ -448,26 +450,18 @@
                 {#if layoutMode === 'list'}
                   <!-- List Mode: Horizontal Ticket Card (One by One) with Wide Star Rating -->
                   <div
-                    class="border border-[#262629] bg-[#0A0A0B] hover:border-[#8A8882] transition-colors flex flex-row group p-2.5 gap-3"
+                    class="relative border border-[#262629] bg-[#0A0A0B] hover:border-[#8A8882] transition-colors flex flex-row group p-2.5 gap-3"
                   >
-                    <div class="w-20 sm:w-24 shrink-0 aspect-[2/3] bg-[#121214] border border-[#262629] overflow-hidden relative">
+                    <div class="w-20 sm:w-24 shrink-0 aspect-[2/3] bg-[#121214] border border-[#262629] overflow-hidden">
                       <PosterImage
                         src={item.posterUrl}
                         alt={item.title}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         fallbackLabel="SEEN"
                       />
-                      <button
-                        type="button"
-                        onclick={() => library.undoSeen(item.id)}
-                        class="absolute top-1 right-1 w-6 h-6 bg-[#0A0A0B]/80 hover:bg-accent hover:text-[#0A0A0B] text-[#F2EFE9] border border-[#262629] flex items-center justify-center font-mono text-xs transition-colors touch-manipulation"
-                        title="Remove from seen blacklist"
-                      >
-                        ✕
-                      </button>
                     </div>
 
-                    <div class="flex-1 flex flex-col justify-between min-w-0">
+                    <div class="flex-1 flex flex-col justify-between min-w-0 pr-7">
                       <div>
                         <h3 class="font-serif text-base sm:text-lg leading-tight text-[#F2EFE9] line-clamp-2" title={item.title}>
                           {item.title}
@@ -519,6 +513,16 @@
                         </button>
                       </div>
                     </div>
+
+                    <!-- Top-Right Card Cross Action Button -->
+                    <button
+                      type="button"
+                      onclick={() => library.undoSeen(item.id)}
+                      class="absolute top-2 right-2 w-6 h-6 border border-[#262629] bg-[#0A0A0B] hover:bg-accent hover:text-[#0A0A0B] hover:border-accent text-[#8A8882] flex items-center justify-center font-mono text-xs transition-colors touch-manipulation"
+                      title="Remove from seen blacklist"
+                    >
+                      ✕
+                    </button>
                   </div>
                 {:else}
                   <!-- Grid Mode: Vertical Poster Card -->
