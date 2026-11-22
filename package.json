@@ -19,7 +19,7 @@
     "@huggingface/transformers": "^4.3.2",
     "@libsql/client": "^0.18.0",
     "drizzle-orm": "^0.45.4",
-    "zod": "^3.24.2"
+    "zod": "^4.6.6"
   },
   "devDependencies": {
     "@sveltejs/adapter-node": "^5.2.12",
