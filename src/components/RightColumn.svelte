@@ -249,29 +249,34 @@
                 </button>
               </div>
               <!-- Interactive 5-Star Rating Control -->
-              <div class="flex items-center gap-1 mt-1 pt-1 border-t border-[#262629]/60">
-                <span class="font-mono text-[8px] text-[#8A8882] uppercase tracking-wider mr-1">
-                  RATING:
-                </span>
-                {#each [1, 2, 3, 4, 5] as star (star)}
-                  {@const isFilled = (item.rating || 0) >= star}
-                  <button
-                    type="button"
-                    onclick={() => onRateSeenMovie(item.id, star)}
-                    class="font-mono text-xs transition-colors px-0.5 hover:scale-125 {isFilled
-                      ? 'text-accent'
-                      : 'text-[#262629] hover:text-[#8A8882]'}"
-                    title="Rate {star}/5 stars"
-                  >
-                    ★
-                  </button>
-                {/each}
+              <div class="flex items-center justify-between mt-1 pt-1 border-t border-[#262629]/60">
+                <div class="flex items-center gap-1">
+                  <span class="font-mono text-[8px] text-[#8A8882] uppercase tracking-wider mr-1">
+                    RATING:
+                  </span>
+                  <div class="flex items-center">
+                    {#each [1, 2, 3, 4, 5] as star (star)}
+                      {@const isFilled = (item.rating || 0) >= star}
+                      <button
+                        type="button"
+                        onclick={() => onRateSeenMovie(item.id, star)}
+                        class="p-1 text-sm transition-transform active:scale-125 touch-manipulation {isFilled
+                          ? 'text-accent'
+                          : 'text-[#3E3E42] hover:text-[#8A8882]'}"
+                        title="Rate {star}/5 stars"
+                        aria-label="Rate {star} of 5 stars"
+                      >
+                        ★
+                      </button>
+                    {/each}
+                  </div>
+                </div>
                 {#if item.rating}
-                  <span class="font-mono text-[9px] text-accent font-bold ml-1.5">
+                  <span class="font-mono text-[9px] text-accent font-bold">
                     {item.rating}/5
                   </span>
                 {:else}
-                  <span class="font-mono text-[8px] text-[#8A8882]/40 ml-1.5 uppercase">
+                  <span class="font-mono text-[8px] text-[#8A8882]/40 uppercase">
                     UNRATED
                   </span>
                 {/if}

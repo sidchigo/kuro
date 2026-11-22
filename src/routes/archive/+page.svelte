@@ -327,7 +327,7 @@
                     <button
                       type="button"
                       onclick={() => library.undoSeen(item.id)}
-                      class="absolute top-1.5 right-1.5 w-6 h-6 bg-[#0A0A0B]/80 hover:bg-accent hover:text-[#0A0A0B] text-[#F2EFE9] border border-[#262629] flex items-center justify-center font-mono text-xs transition-colors"
+                      class="absolute top-1.5 right-1.5 w-7 h-7 sm:w-6 sm:h-6 bg-[#0A0A0B]/80 hover:bg-accent hover:text-[#0A0A0B] text-[#F2EFE9] border border-[#262629] flex items-center justify-center font-mono text-xs transition-colors touch-manipulation"
                       title="Remove from seen blacklist"
                     >
                       ✕
@@ -345,28 +345,43 @@
                     </div>
 
                     <div class="mt-3 pt-2 border-t border-[#262629]">
-                      <!-- Star Rating Strip -->
-                      <div class="flex items-center justify-between">
-                        <span class="font-mono text-[8px] text-[#8A8882] uppercase">RATING:</span>
-                        <div class="flex items-center gap-0.5">
-                          {#each [1, 2, 3, 4, 5] as star (star)}
-                            <button
-                              type="button"
-                              onclick={() => library.rateSeen(item.id, star)}
-                              class="text-xs transition-colors hover:scale-125 {(item.rating || 0) >= star
-                                ? 'text-accent'
-                                : 'text-[#262629] hover:text-[#8A8882]'}"
-                            >
-                              ★
-                            </button>
-                          {/each}
-                        </div>
+                      <!-- Star Rating Strip with Enlarged Touch Targets for Mobile -->
+                      <div class="flex items-center justify-between mb-1.5">
+                        <span class="font-mono text-[9px] text-[#8A8882] uppercase tracking-wider">
+                          RATING
+                        </span>
+                        {#if item.rating}
+                          <span class="font-mono text-[9px] text-accent font-bold">
+                            {item.rating}/5
+                          </span>
+                        {:else}
+                          <span class="font-mono text-[8px] text-[#8A8882]/40 uppercase">
+                            UNRATED
+                          </span>
+                        {/if}
+                      </div>
+
+                      <div class="grid grid-cols-5 border border-[#262629] bg-[#0E0E10]">
+                        {#each [1, 2, 3, 4, 5] as star (star)}
+                          {@const isFilled = (item.rating || 0) >= star}
+                          <button
+                            type="button"
+                            onclick={() => library.rateSeen(item.id, star)}
+                            class="h-8 sm:h-9 flex items-center justify-center text-sm sm:text-base transition-all touch-manipulation active:scale-125 {isFilled
+                              ? 'text-accent'
+                              : 'text-[#3E3E42] hover:text-[#8A8882]'}"
+                            title="Rate {star}/5 stars"
+                            aria-label="Rate {star} of 5 stars"
+                          >
+                            ★
+                          </button>
+                        {/each}
                       </div>
 
                       <button
                         type="button"
                         onclick={() => handleUseAsSeed(item.id)}
-                        class="w-full mt-2 py-1 border border-[#262629] hover:border-[#F2EFE9] hover:text-[#F2EFE9] text-[#8A8882] font-mono text-[9px] uppercase text-center transition-colors"
+                        class="w-full mt-2 py-1.5 border border-[#262629] hover:border-[#F2EFE9] hover:text-[#F2EFE9] text-[#8A8882] font-mono text-[9px] uppercase text-center transition-colors touch-manipulation"
                       >
                         [USE AS SEED]
                       </button>
