@@ -303,7 +303,7 @@
                 {#if layoutMode === 'list'}
                   <!-- List Mode: Horizontal Ticket Card (One by One) -->
                   <div
-                    class="relative border border-[#262629] bg-[#0A0A0B] hover:border-[#8A8882] transition-colors flex flex-row group p-2.5 gap-3"
+                    class="border border-[#262629] bg-[#0A0A0B] hover:border-[#8A8882] transition-colors flex flex-row group p-2.5 gap-3"
                   >
                     <div class="w-20 sm:w-24 shrink-0 aspect-[2/3] bg-[#121214] border border-[#262629] overflow-hidden">
                       <PosterImage
@@ -314,16 +314,27 @@
                       />
                     </div>
 
-                    <div class="flex-1 flex flex-col justify-between min-w-0 pr-7">
-                      <div>
-                        <h3 class="font-serif text-base sm:text-lg leading-tight text-[#F2EFE9] line-clamp-2" title={item.title}>
-                          {item.title}
-                        </h3>
-                        <p class="font-mono text-[9px] text-[#8A8882] uppercase mt-1 tracking-wider">
-                          {item.year || '----'} · [{item.originalLanguage || 'EN'}]{item.director
-                            ? ` · ${item.director}`
-                            : ''}
-                        </p>
+                    <div class="flex-1 flex flex-col justify-between min-w-0">
+                      <!-- Top Title & Cross Action Row -->
+                      <div class="flex items-start justify-between gap-2">
+                        <div class="min-w-0 flex-1">
+                          <h3 class="font-serif text-base sm:text-lg leading-tight text-[#F2EFE9] line-clamp-2" title={item.title}>
+                            {item.title}
+                          </h3>
+                          <p class="font-mono text-[9px] text-[#8A8882] uppercase mt-1 tracking-wider">
+                            {item.year || '----'} · [{item.originalLanguage || 'EN'}]{item.director
+                              ? ` · ${item.director}`
+                              : ''}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onclick={() => library.removeFromWatchlist(item.id)}
+                          class="w-6 h-6 border border-[#262629] bg-[#0A0A0B] hover:bg-accent hover:text-[#0A0A0B] hover:border-accent text-[#8A8882] flex items-center justify-center font-mono text-xs transition-colors touch-manipulation shrink-0"
+                          title="Remove from watchlist"
+                        >
+                          ✕
+                        </button>
                       </div>
 
                       <div class="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-[#262629] font-mono text-[9px] uppercase">
@@ -343,16 +354,6 @@
                         </button>
                       </div>
                     </div>
-
-                    <!-- Top-Right Card Cross Action Button -->
-                    <button
-                      type="button"
-                      onclick={() => library.removeFromWatchlist(item.id)}
-                      class="absolute top-2 right-2 w-6 h-6 border border-[#262629] bg-[#0A0A0B] hover:bg-accent hover:text-[#0A0A0B] hover:border-accent text-[#8A8882] flex items-center justify-center font-mono text-xs transition-colors touch-manipulation"
-                      title="Remove from watchlist"
-                    >
-                      ✕
-                    </button>
                   </div>
                 {:else}
                   <!-- Grid Mode: Vertical Poster Card -->
@@ -450,7 +451,7 @@
                 {#if layoutMode === 'list'}
                   <!-- List Mode: Horizontal Ticket Card (One by One) with Wide Star Rating -->
                   <div
-                    class="relative border border-[#262629] bg-[#0A0A0B] hover:border-[#8A8882] transition-colors flex flex-row group p-2.5 gap-3"
+                    class="border border-[#262629] bg-[#0A0A0B] hover:border-[#8A8882] transition-colors flex flex-row group p-2.5 gap-3"
                   >
                     <div class="w-20 sm:w-24 shrink-0 aspect-[2/3] bg-[#121214] border border-[#262629] overflow-hidden">
                       <PosterImage
@@ -461,14 +462,25 @@
                       />
                     </div>
 
-                    <div class="flex-1 flex flex-col justify-between min-w-0 pr-7">
-                      <div>
-                        <h3 class="font-serif text-base sm:text-lg leading-tight text-[#F2EFE9] line-clamp-2" title={item.title}>
-                          {item.title}
-                        </h3>
-                        <p class="font-mono text-[9px] text-[#8A8882] uppercase mt-1 tracking-wider">
-                          {item.year || '----'} · [{item.originalLanguage || 'EN'}]
-                        </p>
+                    <div class="flex-1 flex flex-col justify-between min-w-0">
+                      <!-- Top Title & Cross Action Row -->
+                      <div class="flex items-start justify-between gap-2">
+                        <div class="min-w-0 flex-1">
+                          <h3 class="font-serif text-base sm:text-lg leading-tight text-[#F2EFE9] line-clamp-2" title={item.title}>
+                            {item.title}
+                          </h3>
+                          <p class="font-mono text-[9px] text-[#8A8882] uppercase mt-1 tracking-wider">
+                            {item.year || '----'} · [{item.originalLanguage || 'EN'}]
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onclick={() => library.undoSeen(item.id)}
+                          class="w-6 h-6 border border-[#262629] bg-[#0A0A0B] hover:bg-accent hover:text-[#0A0A0B] hover:border-accent text-[#8A8882] flex items-center justify-center font-mono text-xs transition-colors touch-manipulation shrink-0"
+                          title="Remove from seen blacklist"
+                        >
+                          ✕
+                        </button>
                       </div>
 
                       <div class="mt-2 pt-2 border-t border-[#262629]">
@@ -513,16 +525,6 @@
                         </button>
                       </div>
                     </div>
-
-                    <!-- Top-Right Card Cross Action Button -->
-                    <button
-                      type="button"
-                      onclick={() => library.undoSeen(item.id)}
-                      class="absolute top-2 right-2 w-6 h-6 border border-[#262629] bg-[#0A0A0B] hover:bg-accent hover:text-[#0A0A0B] hover:border-accent text-[#8A8882] flex items-center justify-center font-mono text-xs transition-colors touch-manipulation"
-                      title="Remove from seen blacklist"
-                    >
-                      ✕
-                    </button>
                   </div>
                 {:else}
                   <!-- Grid Mode: Vertical Poster Card -->
