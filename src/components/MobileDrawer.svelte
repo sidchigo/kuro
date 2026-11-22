@@ -1,9 +1,9 @@
 <script lang="ts">
   import type { WatchlistItem, SeenItem, User } from '$lib/types';
-  import { themeStore, STOCK_THEMES } from '$lib/stores/theme.svelte';
+  import AccentSwitcher from './AccentSwitcher.svelte';
 
   interface Props {
-    section: 'plan' | 'seen' | null;
+    section: 'plan' | 'seen' | 'accent' | null;
     onClose: () => void;
     currentUser: User | null;
     onOpenAuth: () => void;
@@ -33,18 +33,39 @@
       <span class="font-mono text-xs uppercase text-[#F2EFE9] font-bold">
         {section === 'plan'
           ? `PLAN TO WATCH ${currentUser ? `(${watchlist.length})` : ''}`
-          : `ALREADY SEEN ${currentUser ? `(${seenList.length})` : ''}`}
+          : section === 'seen'
+            ? `ALREADY SEEN ${currentUser ? `(${seenList.length})` : ''}`
+            : 'MANAGE ACCENTS'}
       </span>
-      <button
-        type="button"
-        onclick={onClose}
-        class="font-mono text-xs text-[#8A8882] hover:text-accent"
-      >
-        ✕ CLOSE
-      </button>
+      <div class="flex items-center gap-2">
+        {#if section !== 'accent'}
+          <a
+            href="/archive"
+            class="font-mono text-[9px] uppercase text-accent hover:text-[#F2EFE9] border border-[#262629] hover:border-accent px-1.5 py-0.5 transition-colors"
+          >
+            [EXPAND ARCHIVE]
+          </a>
+        {/if}
+        <button
+          type="button"
+          onclick={onClose}
+          class="font-mono text-xs text-[#8A8882] hover:text-accent"
+        >
+          ✕ CLOSE
+        </button>
+      </div>
     </div>
 
-    {#if !currentUser}
+    {#if section === 'accent'}
+      <div class="py-3">
+        <p class="font-mono text-[10px] text-[#8A8882] uppercase tracking-wider mb-3 leading-relaxed">
+          Select a preset neo-brutalist accent or pick a custom hex color. Theme persists across all pages and sessions.
+        </p>
+        <div class="p-3 border border-[#262629] bg-[#121214] flex items-center justify-between">
+          <AccentSwitcher />
+        </div>
+      </div>
+    {:else if !currentUser}
       <div class="py-6 text-center border border-[#262629] p-4 bg-[#0A0A0B]">
         <p class="font-mono text-xs text-[#8A8882] uppercase mb-3">
           SIGN IN REQUIRED TO ACCESS {section === 'plan' ? 'PLAN TO WATCH' : 'SEEN ARCHIVE'}
@@ -115,53 +136,17 @@
       </div>
     {/if}
 
-    <!-- Bottom Accent Color Toggle: Crimson + Amber + Acid + Custom -->
-    <div
-      class="pt-3 border-t border-[#262629] font-mono text-[10px] uppercase tracking-wider mt-4 flex items-center justify-between"
-    >
-      <div class="flex items-center gap-1.5 text-[#8A8882]">
-        <span class="w-2 h-2 inline-block shrink-0" style="background-color: var(--accent);"></span>
-        <span>ACCENT</span>
-      </div>
-      <div class="flex items-center gap-1.5">
-        {#each STOCK_THEMES as theme (theme.id)}
-          <button
-            type="button"
-            onclick={() => themeStore.setTheme(theme.id)}
-            class="w-4 h-4 transition-all flex items-center justify-center border {themeStore.currentTheme === theme.id ? 'border-[#F2EFE9] scale-110' : 'border-[#262629] hover:border-[#8A8882]'}"
-            style="background-color: {theme.color};"
-            title="{theme.label}"
-            aria-label="Set accent color to {theme.label}"
-          >
-            {#if themeStore.currentTheme === theme.id}
-              <span class="w-1 h-1 bg-[#0A0A0B]"></span>
-            {/if}
-          </button>
-        {/each}
-
-        <!-- Custom Color Picker Swatch -->
-        <label
-          class="relative w-4 h-4 cursor-pointer transition-all flex items-center justify-center border {themeStore.currentTheme === 'custom' ? 'border-[#F2EFE9] scale-110' : 'border-[#262629] hover:border-[#8A8882]'}"
-          style="background-color: {themeStore.customColor};"
-          title="CUSTOM ({themeStore.customColor.toUpperCase()})"
-          aria-label="Set custom accent color"
+    <!-- Bottom Action & Accent Switcher Strip -->
+    <div class="pt-3 border-t border-[#262629] mt-4 flex items-center justify-between flex-wrap gap-2">
+      <AccentSwitcher />
+      {#if section !== 'accent'}
+        <a
+          href="/archive"
+          class="font-mono text-[9px] uppercase text-accent hover:text-[#F2EFE9] transition-colors ml-auto"
         >
-          <input
-            type="color"
-            value={themeStore.customColor}
-            oninput={(e) => themeStore.setCustomColor(e.currentTarget.value)}
-            onchange={(e) => themeStore.setCustomColor(e.currentTarget.value)}
-            onclick={() => themeStore.setTheme('custom')}
-            class="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
-            aria-label="Custom accent color input"
-          />
-          {#if themeStore.currentTheme === 'custom'}
-            <span class="w-1 h-1 bg-[#0A0A0B] pointer-events-none z-10"></span>
-          {:else}
-            <span class="font-mono text-[8px] leading-none text-[#F2EFE9] drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)] font-bold pointer-events-none z-10 select-none">+</span>
-          {/if}
-        </label>
-      </div>
+          EXPANDED ARCHIVE →
+        </a>
+      {/if}
     </div>
   </div>
 {/if}

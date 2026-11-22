@@ -86,7 +86,7 @@
   let discoveryResults = $state<DiscoveryResult | null>(null);
 
   // Mobile Drawer
-  let mobileDrawerSection = $state<"plan" | "seen" | null>(null);
+  let mobileDrawerSection = $state<"plan" | "seen" | "accent" | null>(null);
 
   let sentenceCanvasRef: SentenceCanvas | undefined = $state();
   let resultsStackRef: ResultsStack | undefined = $state();

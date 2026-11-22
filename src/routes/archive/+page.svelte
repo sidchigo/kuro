@@ -2,6 +2,7 @@
   import type { PageData } from './$types';
   import { createLibraryStore } from '$lib/stores/library.svelte';
   import PosterImage from '$lib/../components/PosterImage.svelte';
+  import AccentSwitcher from '$lib/../components/AccentSwitcher.svelte';
   import { goto } from '$app/navigation';
 
   let { data }: { data: PageData } = $props();
@@ -113,7 +114,7 @@
       </nav>
     </div>
 
-    <!-- Right Actions: Filter & Return to Engine -->
+    <!-- Right Actions: Filter, Accent Switcher & Return to Engine -->
     <div class="flex items-center gap-4 shrink-0">
       <div class="relative hidden sm:block">
         <input
@@ -132,6 +133,10 @@
             ✕
           </button>
         {/if}
+      </div>
+
+      <div class="hidden md:block">
+        <AccentSwitcher />
       </div>
 
       <a
@@ -175,6 +180,31 @@
       RECENTS
     </button>
   </nav>
+
+  <!-- Mobile Sub-Toolbar: Filter & Accent Switcher -->
+  <div class="sm:hidden border-b border-[#262629] bg-[#121214] p-3 flex flex-col gap-2.5 shrink-0">
+    <div class="relative w-full">
+      <input
+        type="text"
+        bind:value={filterQuery}
+        placeholder="FILTER BY TITLE..."
+        class="w-full h-8 bg-[#0A0A0B] border border-[#262629] pl-2.5 pr-8 font-mono text-[10px] uppercase text-[#F2EFE9] placeholder:text-[#8A8882] focus:border-[#F2EFE9] focus:outline-none transition-colors"
+      />
+      {#if filterQuery}
+        <button
+          type="button"
+          onclick={() => (filterQuery = '')}
+          aria-label="Clear filter"
+          class="absolute inset-y-0 right-0 w-8 flex items-center justify-center font-mono text-[11px] leading-none text-[#8A8882] hover:text-[#F2EFE9] transition-colors"
+        >
+          ✕
+        </button>
+      {/if}
+    </div>
+    <div class="flex items-center justify-between pt-1 border-t border-[#262629]/60">
+      <AccentSwitcher />
+    </div>
+  </div>
 
   <!-- Main Content Area -->
   <main class="flex-1 p-6 lg:p-12">
