@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import type { PageData } from './$types';
   import { createLibraryStore } from '$lib/stores/library.svelte';
   import PosterImage from '$lib/../components/PosterImage.svelte';
@@ -15,6 +16,33 @@
 
   let activeTab = $state<'watchlist' | 'seen' | 'recent'>('watchlist');
   let filterQuery = $state('');
+  let layoutMode = $state<'list' | 'grid'>('list');
+
+  onMount(() => {
+    try {
+      const saved = localStorage.getItem('kuro_archive_layout');
+      if (saved === 'list' || saved === 'grid') {
+        layoutMode = saved;
+      }
+    } catch {
+      // LocalStorage unavailable
+    }
+  });
+
+  function setLayoutMode(mode: 'list' | 'grid') {
+    layoutMode = mode;
+    try {
+      localStorage.setItem('kuro_archive_layout', mode);
+    } catch {
+      // LocalStorage unavailable
+    }
+  }
+
+  let gridClass = $derived(
+    layoutMode === 'list'
+      ? 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2.5 sm:gap-4'
+      : 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2.5 sm:gap-4'
+  );
 
   let filteredWatchlist = $derived.by(() => {
     if (!filterQuery.trim()) return library.watchlist;
@@ -113,14 +141,38 @@
       </nav>
     </div>
 
-    <!-- Right Actions: Filter & Return to Engine -->
-    <div class="flex items-center gap-3 sm:gap-4 shrink-0">
+    <!-- Right Actions: Layout Toggle, Filter & Return to Engine -->
+    <div class="flex items-center gap-2.5 sm:gap-4 shrink-0">
+      <!-- Desktop Layout Switcher: List vs Grid -->
+      <div class="hidden sm:inline-flex items-center border border-[#262629] divide-x divide-[#262629] font-mono text-[10px]">
+        <button
+          type="button"
+          onclick={() => setLayoutMode('list')}
+          class="h-9 px-2.5 uppercase transition-colors {layoutMode === 'list'
+            ? 'bg-[#F2EFE9] text-[#0A0A0B] font-bold'
+            : 'text-[#8A8882] hover:text-[#F2EFE9]'}"
+          title="List View"
+        >
+          LIST
+        </button>
+        <button
+          type="button"
+          onclick={() => setLayoutMode('grid')}
+          class="h-9 px-2.5 uppercase transition-colors {layoutMode === 'grid'
+            ? 'bg-[#F2EFE9] text-[#0A0A0B] font-bold'
+            : 'text-[#8A8882] hover:text-[#F2EFE9]'}"
+          title="Grid View"
+        >
+          GRID
+        </button>
+      </div>
+
       <div class="relative hidden sm:block">
         <input
           type="text"
           bind:value={filterQuery}
           placeholder="FILTER BY TITLE..."
-          class="w-48 lg:w-64 h-9 bg-[#121214] border border-[#262629] pl-2.5 pr-8 font-mono text-[10px] uppercase text-[#F2EFE9] placeholder:text-[#8A8882] focus:border-[#F2EFE9] focus:outline-none transition-colors"
+          class="w-44 lg:w-60 h-9 bg-[#121214] border border-[#262629] pl-2.5 pr-8 font-mono text-[10px] uppercase text-[#F2EFE9] placeholder:text-[#8A8882] focus:border-[#F2EFE9] focus:outline-none transition-colors"
         />
         {#if filterQuery}
           <button
@@ -176,9 +228,9 @@
     </button>
   </nav>
 
-  <!-- Mobile Filter Strip -->
-  <div class="sm:hidden border-b border-[#262629] bg-[#121214] px-3 py-2 shrink-0">
-    <div class="relative w-full">
+  <!-- Mobile Filter & Layout Toggle Strip -->
+  <div class="sm:hidden border-b border-[#262629] bg-[#121214] px-3 py-2 shrink-0 flex items-center gap-2">
+    <div class="relative flex-1">
       <input
         type="text"
         bind:value={filterQuery}
@@ -195,6 +247,30 @@
           ✕
         </button>
       {/if}
+    </div>
+
+    <!-- Mobile Layout Switcher: List (One by One) vs Grid (Two Column) -->
+    <div class="inline-flex items-center border border-[#262629] divide-x divide-[#262629] font-mono text-[9px] shrink-0">
+      <button
+        type="button"
+        onclick={() => setLayoutMode('list')}
+        class="h-8 px-2 uppercase transition-colors {layoutMode === 'list'
+          ? 'bg-[#F2EFE9] text-[#0A0A0B] font-bold'
+          : 'text-[#8A8882] hover:text-[#F2EFE9]'}"
+        title="1-column list (one by one)"
+      >
+        LIST
+      </button>
+      <button
+        type="button"
+        onclick={() => setLayoutMode('grid')}
+        class="h-8 px-2 uppercase transition-colors {layoutMode === 'grid'
+          ? 'bg-[#F2EFE9] text-[#0A0A0B] font-bold'
+          : 'text-[#8A8882] hover:text-[#F2EFE9]'}"
+        title="2-column grid"
+      >
+        GRID
+      </button>
     </div>
   </div>
 
@@ -222,58 +298,113 @@
               </p>
             </div>
           {:else}
-            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2.5 sm:gap-4">
+            <div class={gridClass}>
               {#each filteredWatchlist as item (item.id)}
-                <div
-                  class="border border-[#262629] bg-[#0A0A0B] hover:border-[#8A8882] transition-colors flex flex-col group p-2 sm:p-2.5"
-                >
-                  <div class="aspect-[2/3] w-full bg-[#121214] border border-[#262629] overflow-hidden relative">
-                    <PosterImage
-                      src={item.posterUrl}
-                      alt={item.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      fallbackLabel="PLAN"
-                    />
-                    <button
-                      type="button"
-                      onclick={() => library.removeFromWatchlist(item.id)}
-                      class="absolute top-1.5 right-1.5 w-6 h-6 bg-[#0A0A0B]/80 hover:bg-accent hover:text-[#0A0A0B] text-[#F2EFE9] border border-[#262629] flex items-center justify-center font-mono text-xs transition-colors"
-                      title="Remove from watchlist"
-                    >
-                      ✕
-                    </button>
-                  </div>
-
-                  <div class="pt-2.5 flex-1 flex flex-col justify-between">
-                    <div>
-                      <h3 class="font-serif text-base leading-tight text-[#F2EFE9] line-clamp-1" title={item.title}>
-                        {item.title}
-                      </h3>
-                      <p class="font-mono text-[9px] text-[#8A8882] uppercase mt-1 tracking-wider">
-                        {item.year || '----'} · [{item.originalLanguage || 'EN'}]{item.director
-                          ? ` · ${item.director}`
-                          : ''}
-                      </p>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-1.5 mt-3 pt-2 border-t border-[#262629] font-mono text-[9px] uppercase">
+                {#if layoutMode === 'list'}
+                  <!-- List Mode: Horizontal Ticket Card (One by One) -->
+                  <div
+                    class="border border-[#262629] bg-[#0A0A0B] hover:border-[#8A8882] transition-colors flex flex-row group p-2.5 gap-3"
+                  >
+                    <div class="w-20 sm:w-24 shrink-0 aspect-[2/3] bg-[#121214] border border-[#262629] overflow-hidden relative">
+                      <PosterImage
+                        src={item.posterUrl}
+                        alt={item.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        fallbackLabel="PLAN"
+                      />
                       <button
                         type="button"
-                        onclick={() => handleUseAsSeed(item.id)}
-                        class="py-1 border border-[#262629] hover:border-[#F2EFE9] hover:text-[#F2EFE9] text-[#8A8882] text-center transition-colors"
+                        onclick={() => library.removeFromWatchlist(item.id)}
+                        class="absolute top-1 right-1 w-6 h-6 bg-[#0A0A0B]/80 hover:bg-accent hover:text-[#0A0A0B] text-[#F2EFE9] border border-[#262629] flex items-center justify-center font-mono text-xs transition-colors touch-manipulation"
+                        title="Remove from watchlist"
                       >
-                        [SEED]
-                      </button>
-                      <button
-                        type="button"
-                        onclick={() => library.toggleSeen(item)}
-                        class="py-1 border border-[#262629] hover:border-accent hover:text-accent text-[#8A8882] text-center transition-colors"
-                      >
-                        [SEEN]
+                        ✕
                       </button>
                     </div>
+
+                    <div class="flex-1 flex flex-col justify-between min-w-0">
+                      <div>
+                        <h3 class="font-serif text-base sm:text-lg leading-tight text-[#F2EFE9] line-clamp-2" title={item.title}>
+                          {item.title}
+                        </h3>
+                        <p class="font-mono text-[9px] text-[#8A8882] uppercase mt-1 tracking-wider">
+                          {item.year || '----'} · [{item.originalLanguage || 'EN'}]{item.director
+                            ? ` · ${item.director}`
+                            : ''}
+                        </p>
+                      </div>
+
+                      <div class="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-[#262629] font-mono text-[9px] uppercase">
+                        <button
+                          type="button"
+                          onclick={() => handleUseAsSeed(item.id)}
+                          class="py-1.5 border border-[#262629] hover:border-[#F2EFE9] hover:text-[#F2EFE9] text-[#8A8882] text-center transition-colors touch-manipulation"
+                        >
+                          [SEED]
+                        </button>
+                        <button
+                          type="button"
+                          onclick={() => library.toggleSeen(item)}
+                          class="py-1.5 border border-[#262629] hover:border-accent hover:text-accent text-[#8A8882] text-center transition-colors touch-manipulation"
+                        >
+                          [SEEN]
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                </div>
+                {:else}
+                  <!-- Grid Mode: Vertical Poster Card -->
+                  <div
+                    class="border border-[#262629] bg-[#0A0A0B] hover:border-[#8A8882] transition-colors flex flex-col group p-2 sm:p-2.5"
+                  >
+                    <div class="aspect-[2/3] w-full bg-[#121214] border border-[#262629] overflow-hidden relative">
+                      <PosterImage
+                        src={item.posterUrl}
+                        alt={item.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        fallbackLabel="PLAN"
+                      />
+                      <button
+                        type="button"
+                        onclick={() => library.removeFromWatchlist(item.id)}
+                        class="absolute top-1.5 right-1.5 w-6 h-6 bg-[#0A0A0B]/80 hover:bg-accent hover:text-[#0A0A0B] text-[#F2EFE9] border border-[#262629] flex items-center justify-center font-mono text-xs transition-colors"
+                        title="Remove from watchlist"
+                      >
+                        ✕
+                      </button>
+                    </div>
+
+                    <div class="pt-2.5 flex-1 flex flex-col justify-between">
+                      <div>
+                        <h3 class="font-serif text-base leading-tight text-[#F2EFE9] line-clamp-1" title={item.title}>
+                          {item.title}
+                        </h3>
+                        <p class="font-mono text-[9px] text-[#8A8882] uppercase mt-1 tracking-wider">
+                          {item.year || '----'} · [{item.originalLanguage || 'EN'}]{item.director
+                            ? ` · ${item.director}`
+                            : ''}
+                        </p>
+                      </div>
+
+                      <div class="grid grid-cols-2 gap-1.5 mt-3 pt-2 border-t border-[#262629] font-mono text-[9px] uppercase">
+                        <button
+                          type="button"
+                          onclick={() => handleUseAsSeed(item.id)}
+                          class="py-1 border border-[#262629] hover:border-[#F2EFE9] hover:text-[#F2EFE9] text-[#8A8882] text-center transition-colors"
+                        >
+                          [SEED]
+                        </button>
+                        <button
+                          type="button"
+                          onclick={() => library.toggleSeen(item)}
+                          class="py-1 border border-[#262629] hover:border-accent hover:text-accent text-[#8A8882] text-center transition-colors"
+                        >
+                          [SEEN]
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                {/if}
               {/each}
             </div>
           {/if}
@@ -312,82 +443,160 @@
               </p>
             </div>
           {:else}
-            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2.5 sm:gap-4">
+            <div class={gridClass}>
               {#each filteredSeenList as item (item.id)}
-                <div
-                  class="border border-[#262629] bg-[#0A0A0B] hover:border-[#8A8882] transition-colors flex flex-col group p-2 sm:p-2.5"
-                >
-                  <div class="aspect-[2/3] w-full bg-[#121214] border border-[#262629] overflow-hidden relative">
-                    <PosterImage
-                      src={item.posterUrl}
-                      alt={item.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      fallbackLabel="SEEN"
-                    />
-                    <button
-                      type="button"
-                      onclick={() => library.undoSeen(item.id)}
-                      class="absolute top-1.5 right-1.5 w-7 h-7 sm:w-6 sm:h-6 bg-[#0A0A0B]/80 hover:bg-accent hover:text-[#0A0A0B] text-[#F2EFE9] border border-[#262629] flex items-center justify-center font-mono text-xs transition-colors touch-manipulation"
-                      title="Remove from seen blacklist"
-                    >
-                      ✕
-                    </button>
-                  </div>
-
-                  <div class="pt-2.5 flex-1 flex flex-col justify-between">
-                    <div>
-                      <h3 class="font-serif text-base leading-tight text-[#F2EFE9] line-clamp-1" title={item.title}>
-                        {item.title}
-                      </h3>
-                      <p class="font-mono text-[9px] text-[#8A8882] uppercase mt-1 tracking-wider">
-                        {item.year || '----'} · [{item.originalLanguage || 'EN'}]
-                      </p>
-                    </div>
-
-                    <div class="mt-3 pt-2 border-t border-[#262629]">
-                      <!-- Star Rating Strip with Enlarged Touch Targets for Mobile -->
-                      <div class="flex items-center justify-between mb-1.5">
-                        <span class="font-mono text-[9px] text-[#8A8882] uppercase tracking-wider">
-                          RATING
-                        </span>
-                        {#if item.rating}
-                          <span class="font-mono text-[9px] text-accent font-bold">
-                            {item.rating}/5
-                          </span>
-                        {:else}
-                          <span class="font-mono text-[8px] text-[#8A8882]/40 uppercase">
-                            UNRATED
-                          </span>
-                        {/if}
-                      </div>
-
-                      <div class="grid grid-cols-5 border border-[#262629] bg-[#0E0E10]">
-                        {#each [1, 2, 3, 4, 5] as star (star)}
-                          {@const isFilled = (item.rating || 0) >= star}
-                          <button
-                            type="button"
-                            onclick={() => library.rateSeen(item.id, star)}
-                            class="h-8 sm:h-9 flex items-center justify-center text-sm sm:text-base transition-all touch-manipulation active:scale-125 {isFilled
-                              ? 'text-accent'
-                              : 'text-[#3E3E42] hover:text-[#8A8882]'}"
-                            title="Rate {star}/5 stars"
-                            aria-label="Rate {star} of 5 stars"
-                          >
-                            ★
-                          </button>
-                        {/each}
-                      </div>
-
+                {#if layoutMode === 'list'}
+                  <!-- List Mode: Horizontal Ticket Card (One by One) with Wide Star Rating -->
+                  <div
+                    class="border border-[#262629] bg-[#0A0A0B] hover:border-[#8A8882] transition-colors flex flex-row group p-2.5 gap-3"
+                  >
+                    <div class="w-20 sm:w-24 shrink-0 aspect-[2/3] bg-[#121214] border border-[#262629] overflow-hidden relative">
+                      <PosterImage
+                        src={item.posterUrl}
+                        alt={item.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        fallbackLabel="SEEN"
+                      />
                       <button
                         type="button"
-                        onclick={() => handleUseAsSeed(item.id)}
-                        class="w-full mt-2 py-1.5 border border-[#262629] hover:border-[#F2EFE9] hover:text-[#F2EFE9] text-[#8A8882] font-mono text-[9px] uppercase text-center transition-colors touch-manipulation"
+                        onclick={() => library.undoSeen(item.id)}
+                        class="absolute top-1 right-1 w-6 h-6 bg-[#0A0A0B]/80 hover:bg-accent hover:text-[#0A0A0B] text-[#F2EFE9] border border-[#262629] flex items-center justify-center font-mono text-xs transition-colors touch-manipulation"
+                        title="Remove from seen blacklist"
                       >
-                        [USE AS SEED]
+                        ✕
                       </button>
                     </div>
+
+                    <div class="flex-1 flex flex-col justify-between min-w-0">
+                      <div>
+                        <h3 class="font-serif text-base sm:text-lg leading-tight text-[#F2EFE9] line-clamp-2" title={item.title}>
+                          {item.title}
+                        </h3>
+                        <p class="font-mono text-[9px] text-[#8A8882] uppercase mt-1 tracking-wider">
+                          {item.year || '----'} · [{item.originalLanguage || 'EN'}]
+                        </p>
+                      </div>
+
+                      <div class="mt-2 pt-2 border-t border-[#262629]">
+                        <div class="flex items-center justify-between mb-1.5">
+                          <span class="font-mono text-[9px] text-[#8A8882] uppercase tracking-wider">
+                            RATING
+                          </span>
+                          {#if item.rating}
+                            <span class="font-mono text-[9px] text-accent font-bold">
+                              {item.rating}/5
+                            </span>
+                          {:else}
+                            <span class="font-mono text-[8px] text-[#8A8882]/40 uppercase">
+                              UNRATED
+                            </span>
+                          {/if}
+                        </div>
+
+                        <div class="grid grid-cols-5 border border-[#262629] bg-[#0E0E10]">
+                          {#each [1, 2, 3, 4, 5] as star (star)}
+                            {@const isFilled = (item.rating || 0) >= star}
+                            <button
+                              type="button"
+                              onclick={() => library.rateSeen(item.id, star)}
+                              class="h-8 flex items-center justify-center text-sm transition-all touch-manipulation active:scale-125 {isFilled
+                                ? 'text-accent'
+                                : 'text-[#3E3E42] hover:text-[#8A8882]'}"
+                              title="Rate {star}/5 stars"
+                              aria-label="Rate {star} of 5 stars"
+                            >
+                              ★
+                            </button>
+                          {/each}
+                        </div>
+
+                        <button
+                          type="button"
+                          onclick={() => handleUseAsSeed(item.id)}
+                          class="w-full mt-2 py-1.5 border border-[#262629] hover:border-[#F2EFE9] hover:text-[#F2EFE9] text-[#8A8882] font-mono text-[9px] uppercase text-center transition-colors touch-manipulation"
+                        >
+                          [USE AS SEED]
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                </div>
+                {:else}
+                  <!-- Grid Mode: Vertical Poster Card -->
+                  <div
+                    class="border border-[#262629] bg-[#0A0A0B] hover:border-[#8A8882] transition-colors flex flex-col group p-2 sm:p-2.5"
+                  >
+                    <div class="aspect-[2/3] w-full bg-[#121214] border border-[#262629] overflow-hidden relative">
+                      <PosterImage
+                        src={item.posterUrl}
+                        alt={item.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        fallbackLabel="SEEN"
+                      />
+                      <button
+                        type="button"
+                        onclick={() => library.undoSeen(item.id)}
+                        class="absolute top-1.5 right-1.5 w-7 h-7 sm:w-6 sm:h-6 bg-[#0A0A0B]/80 hover:bg-accent hover:text-[#0A0A0B] text-[#F2EFE9] border border-[#262629] flex items-center justify-center font-mono text-xs transition-colors touch-manipulation"
+                        title="Remove from seen blacklist"
+                      >
+                        ✕
+                      </button>
+                    </div>
+
+                    <div class="pt-2.5 flex-1 flex flex-col justify-between">
+                      <div>
+                        <h3 class="font-serif text-base leading-tight text-[#F2EFE9] line-clamp-1" title={item.title}>
+                          {item.title}
+                        </h3>
+                        <p class="font-mono text-[9px] text-[#8A8882] uppercase mt-1 tracking-wider">
+                          {item.year || '----'} · [{item.originalLanguage || 'EN'}]
+                        </p>
+                      </div>
+
+                      <div class="mt-3 pt-2 border-t border-[#262629]">
+                        <!-- Star Rating Strip with Enlarged Touch Targets for Mobile -->
+                        <div class="flex items-center justify-between mb-1.5">
+                          <span class="font-mono text-[9px] text-[#8A8882] uppercase tracking-wider">
+                            RATING
+                          </span>
+                          {#if item.rating}
+                            <span class="font-mono text-[9px] text-accent font-bold">
+                              {item.rating}/5
+                            </span>
+                          {:else}
+                            <span class="font-mono text-[8px] text-[#8A8882]/40 uppercase">
+                              UNRATED
+                            </span>
+                          {/if}
+                        </div>
+
+                        <div class="grid grid-cols-5 border border-[#262629] bg-[#0E0E10]">
+                          {#each [1, 2, 3, 4, 5] as star (star)}
+                            {@const isFilled = (item.rating || 0) >= star}
+                            <button
+                              type="button"
+                              onclick={() => library.rateSeen(item.id, star)}
+                              class="h-8 sm:h-9 flex items-center justify-center text-sm sm:text-base transition-all touch-manipulation active:scale-125 {isFilled
+                                ? 'text-accent'
+                                : 'text-[#3E3E42] hover:text-[#8A8882]'}"
+                              title="Rate {star}/5 stars"
+                              aria-label="Rate {star} of 5 stars"
+                            >
+                              ★
+                            </button>
+                          {/each}
+                        </div>
+
+                        <button
+                          type="button"
+                          onclick={() => handleUseAsSeed(item.id)}
+                          class="w-full mt-2 py-1.5 border border-[#262629] hover:border-[#F2EFE9] hover:text-[#F2EFE9] text-[#8A8882] font-mono text-[9px] uppercase text-center transition-colors touch-manipulation"
+                        >
+                          [USE AS SEED]
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                {/if}
               {/each}
             </div>
           {/if}
