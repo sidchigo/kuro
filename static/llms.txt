@@ -1,0 +1,26 @@
+# kuro. / 黒
+
+> An austere, deterministic horror movie discovery engine with a neo-brutalist Japanese editorial grid aesthetic.
+> Canonical URL: https://kuro.siddheshnaik.dev
+> Source Code: https://github.com/sidchigo/kuro
+> Creator: Siddhesh Naik (https://siddheshnaik.dev)
+
+## Core Philosophy: "One film. One sentence. Three nightmares."
+kuro. eliminates modern SaaS bloat—no floating cards, no dropshadows, no neon gradients, and zero artificial telemetry jargon (no fake "98% match" or "synapse vectors"). The interface mirrors physical print, vintage Japanese editorial layouts, and revival cinema manifestos: stark, quiet, disciplined, and razor-sharp.
+
+## Core Capabilities
+- **Seed-Driven Discovery**: Select any seed horror movie and write a 140-character free-form impression of what stayed with you (e.g., *"The creeping isolation of cult and eerie vibes"*).
+- **Deterministic TMDB Waterfall**: 3-tier language-agnostic candidate generation querying seed recommendations, similar titles, and resolved TMDB keywords with strict rating floors (>= 4.8), vote boundaries (cult: 35-1500 votes, foreign: non-English, all: 35+ votes), and blockbuster exclusions.
+- **On-Device EmbeddingGemma-300M Vector Reranker**: 100% local, client/server ONNX Runtime WebAssembly vector inference using Google's EmbeddingGemma-300M (Q8 quantized) with Matryoshka 256-d vector embeddings. Zero third-party LLM API fees, zero 429 rate-limit risks, and <5ms IndexedDB vector cache hits.
+- **Horror Vibe Anchors**: Projects vectors against 14 canonical horror thematic vectors (folk ritual, psychological breakdown, isolation quarantine, techno-curse, etc.) to synthesize grounded, truthful editorial explanations.
+- **Calibrated Match Percentages**: Mathematically transforms raw 256-d cosine similarity into an intuitive 72%–98% scale.
+- **Multi-User RBAC & Embedded Persistence**: Embedded Drizzle ORM + SQLite database (`data/kuro.db`) managing user sessions, private watchlists (sorted by taste affinity), 5-star seen archives, and search histories.
+
+## Technical Specifications
+- **Frontend**: SvelteKit 2 + Svelte 5 Runes ($state, $derived, $props), Tailwind CSS, IBM Plex Mono, Instrument Serif, Inter.
+- **AI Inference**: Transformers.js, ONNX Runtime WebAssembly SIMD, onnx-community/embeddinggemma-300m-ONNX.
+- **Database**: Drizzle ORM, SQLite / LibSQL.
+- **Deployment**: Node 20 LTS managed via systemd on Oracle Cloud VM, Nginx reverse proxy with WebSocket upgrade support and Cloudflare real-IP restoration.
+
+## Complete Documentation
+- [Full LLM Knowledge Base](https://kuro.siddheshnaik.dev/llms-full.txt): Detailed mathematical formulas, vibe anchor vectors, database schemas, and developer Q&A for LLM answer engines.

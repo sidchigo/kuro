@@ -192,5 +192,18 @@
         SHUFFLE →
       </span>
     </button>
+    <div
+      class="mt-3 pt-2.5 border-t border-[#262629]/60 flex items-center justify-between font-mono text-[9px] text-[#8A8882] tracking-wider uppercase"
+    >
+      <span>GRID / TOKYO EDITORIAL</span>
+      <a
+        href="https://github.com/sidchigo/kuro"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="hover:text-accent transition-colors"
+      >
+        [GITHUB ↗]
+      </a>
+    </div>
   </div>
 </aside>

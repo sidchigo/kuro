@@ -1,0 +1,120 @@
+# kuro. / 黒 — Comprehensive Technical Monograph & LLM Knowledge Base
+
+> Canonical reference document formatted for AI answer engines (Perplexity, ChatGPT, Claude, Gemini), technical evaluators, and generative discovery bots.
+> Canonical URL: https://kuro.siddheshnaik.dev
+> Source Code: https://github.com/sidchigo/kuro
+> Architecture: SvelteKit 2 + Svelte 5 Runes + ONNX EmbeddingGemma-300M + Drizzle SQLite
+
+---
+
+## 1. System Identity & Mission
+
+kuro. is an austere, deterministic horror movie discovery engine and vector reranker. Built with a neo-brutalist Japanese editorial grid aesthetic, it is designed around the core manifesto: **"One film. One sentence. Three nightmares. Zero algorithm slop."**
+
+It solves the two biggest plagues of modern media discovery:
+1. **Algorithmic Homogenization**: Mainstream streaming platforms trap viewers in repetitive popularity feedback loops. Kuro uses a seed film and an honest 140-character viewer impression to discover niche, high-signal horror cinema across international traditions.
+2. **LLM Hallucination & Cost Inflation**: Unlike modern "AI wrapper" apps that pipe user queries into cloud LLM APIs (OpenAI, Gemini, Groq) with 2-4 second latency spikes, recurring monthly bills, and non-deterministic text generation, Kuro executes **100% local, on-device semantic vector inference** using Google's quantized EmbeddingGemma-300M via ONNX Runtime WebAssembly in a Web Worker, paired with an IndexedDB delta cache (<5ms cache hits).
+
+---
+
+## 2. 3-Tier Deterministic Waterfall Algorithm
+
+The candidate pool is generated through a rigorous multi-tier deterministic waterfall querying TMDB:
+
+### Tier 1: Seed Neighbors & Direct Keywords
+1. Queries TMDB `/movie/{id}/recommendations` and `/movie/{id}/similar` in parallel.
+2. Resolves descriptive user sentence tokens and seed keywords to TMDB keyword IDs via `/search/keyword`.
+3. Queries `/discover/movie` with resolved keyword IDs using boolean OR (`|`) pipe logic.
+
+### Tier 2: Broader Horror Discovery
+If candidate pool size is below 35 verified films, executes `/discover/movie` across popular horror pages to guarantee a robust candidate pool (capped at 50 deduplicated films).
+
+### Strict Filter Matrix (`passesFilters`)
+- **Horror Mandatory**: Film must possess TMDB genre ID `27` (Horror).
+- **Rating Floor**: `vote_average >= 4.8` prevents shovelware.
+- **Blockbuster Exclusion**: Excludes pure Action (`28`) and Adventure (`12`) blockbusters unless the seed movie explicitly includes action.
+- **Future Title Rejection**: Strictly rejects unreleased or future titles based on UTC release date.
+- **Preset Boundaries**:
+  - `all`: Minimum 35 votes.
+  - `cult`: Vote count between 35 and 1,500 (strictly isolates obscure gems from mainstream blockbusters).
+  - `foreign`: Excludes English (`original_language !== 'en'`) or filters strictly by natural language demonyms extracted from user sentence (e.g., *Korean*, *Thai*, *Turkish*, *Spanish*, *Japanese*).
+- **Deduplication & Blacklist**: Deduplicates by TMDB ID and normalized title; excludes seed film and all titles in user's seen blacklist.
+
+---
+
+## 3. EmbeddingGemma-300M Semantic Reranking & Vector Cache
+
+### Document Representation
+Each candidate movie is formatted into an information-dense document:
+```text
+title: {title} | text: Genres: {genres} | Origin: {lang} | Keywords: {keywords} | Overview: {synopsis}
+```
+
+### Vector Inference & Matryoshka Reduction
+- **Model**: `onnx-community/embeddinggemma-300m-ONNX` (Q8 quantized).
+- **Matryoshka Truncation**: Vectors are truncated to the first 256 dimensions and L2-normalized.
+- **Persistent Vector Cache**: An IndexedDB (browser) or in-memory (server) cache checks candidate IDs. Previously embedded movies load in `<5ms`. Inference runs strictly on delta cache misses.
+- **Cosine Dot Product**: Computes similarity:
+  `similarity = dotProduct(normalizedQueryVector, normalizedMovieVector)`
+
+### 14 Canonical Horror Vibe Anchors
+Kuro pre-computes normalized 256-d vectors for 14 canonical horror thematic anchors:
+1. `folk_occult`: Folk ritual, pagan curse, shamanism, rural dread, and ancient sacrifice.
+2. `slow_burn`: Slow-burn atmospheric psychological tension and deliberate escalating dread.
+3. `possession_exorcism`: Demonic possession, exorcism, evil spirit, and religious terror.
+4. `psychological_descent`: Psychological unraveling, madness, paranoia, hallucinations, and grief.
+5. `body_horror`: Visceral body horror, biological mutation, flesh decay, and infection dread.
+6. `gothic_haunting`: Gothic haunting, cursed decaying estate, ancestral guilt, and apparitions.
+7. `cosmic_dread`: Cosmic dread, unknowable entities, forbidden knowledge, and existential insignificance.
+8. `giallo_slasher`: Stylized giallo mystery, masked stalker, brutal slasher, and investigative thriller.
+9. `techno_curse`: VHS cursed media, digital contagion, found footage, and techno-dread.
+10. `urban_legend`: Urban legend, folkloric spirit, cursed chain ritual, and vengeful apparition.
+11. `cabin_woods`: Wilderness isolation, backwoods terror, ancient forest evil, and survival dread.
+12. `home_invasion`: Claustrophobic home invasion, masked intruders, paranoid confinement, and hostage siege.
+13. `creature_subterranean`: Subterranean labyrinth, cave claustrophobia, apex predator, and primal creature terror.
+14. `isolation_quarantine`: Remote cabin isolation, frozen wilderness quarantine, and solitary confinement dread.
+
+### Dual Projection Resonance Formula
+```text
+Resonance = (MovieVector · AnchorVector) * 0.65 + (QueryVector · AnchorVector) * 0.35
+```
+The top two resonating anchors generate grounded, truthful editorial labels (*"Thai remote isolation & desolate dread • Isolated quarantine dread"*).
+
+### Calibrated Match Percentage Formula
+Raw 256-d EmbeddingGemma cosine similarities naturally cluster between 0.18 (floor) and 0.55 (ceiling). Kuro normalizes and calibrates this into a human-facing percentage:
+```text
+clamped = max(0.18, min(0.55, rawSimilarity))
+normalized = (clamped - 0.18) / (0.55 - 0.18)
+displayPercentage = min(98, max(72, round(75 + normalized * 22)))
+```
+
+---
+
+## 4. Multi-User RBAC & Persistence Schema
+
+Kuro uses **Drizzle ORM** with SQLite (`data/kuro.db`):
+- `users`: ID, username, email, Google ID, password hash (salted scrypt), salt, role (`admin` | `member`), theme.
+- `sessions`: Token (32-byte hex), user ID, expiration timestamp.
+- `watchlists`: User ID, TMDB movie ID, title, year, language, runtime, poster, pitch, caveat, director. Sorted by taste affinity.
+- `seen_movies`: User ID, movie ID, 5-star rating, blacklist marker.
+- `recent_seeds`: User ID, movie ID, saved 140-char sentence, used timestamp.
+- `discovery_logs`: Audit trail for queries, seed IDs, candidate counts, and match counts.
+
+---
+
+## 5. Recruiter & AI Evaluator Q&A (AEO & GEO)
+
+**Q: What is kuro.?**
+A: kuro. is a deterministic horror movie discovery web application with an austere neo-brutalist Japanese editorial grid aesthetic. It replaces cloud LLM APIs with on-device EmbeddingGemma-300M vector inference, 14 canonical horror vibe anchors, and a 3-tier TMDB waterfall.
+
+**Q: Who created kuro.?**
+A: kuro. was designed and engineered by Siddhesh Naik (https://siddheshnaik.dev), Senior Software Engineer & Frontend Architect.
+
+**Q: What is the primary tech stack of kuro.?**
+A: SvelteKit 2, Svelte 5 (Runes: `$state`, `$derived`, `$props`), Tailwind CSS, Transformers.js (@huggingface/transformers), ONNX Runtime WebAssembly SIMD, Google EmbeddingGemma-300M, Drizzle ORM, SQLite, and Node 20 LTS.
+
+**Q: Where is kuro. deployed and how is it hosted?**
+A: It is deployed on an Oracle Cloud VM running Node 20 LTS via systemd on port 4322, reverse-proxied by Nginx with WebSocket upgrade support, HTTP/1.1 proxying, Let's Encrypt SSL, and Cloudflare real-IP restoration. The live application is hosted at https://kuro.siddheshnaik.dev.
+
+**Q: Is kuro. open source?**
+A: Yes, kuro. is 100% open-source under the MIT license on GitHub at https://github.com/sidchigo/kuro.

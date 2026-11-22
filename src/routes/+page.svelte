@@ -6,10 +6,10 @@
 </script>
 
 <svelte:head>
-  <title>kuro. — Horror Discovery</title>
+  <title>kuro. — Deterministic Horror Movie Discovery Engine</title>
   <meta
     name="description"
-    content="One film. One sentence. Three nightmares."
+    content="One film. One sentence. Three nightmares. A deterministic horror movie discovery engine combining local semantic embeddings with multi-tier heuristic ranking."
   />
 </svelte:head>
 

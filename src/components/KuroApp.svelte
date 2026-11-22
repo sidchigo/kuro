@@ -327,11 +327,22 @@
         onMarkSeen={handleToggleSeen}
       />
 
-      <!-- Mobile Theme Accent Strip -->
+      <!-- Mobile Theme Accent Strip & Colophon -->
       <footer class="lg:hidden mt-auto border-t border-[#262629] py-3 px-4 flex items-center justify-between bg-[#0A0A0B]">
-        <div class="flex items-center gap-1.5 text-[#8A8882] font-mono text-[10px] uppercase tracking-wider">
-          <span class="w-2 h-2 inline-block shrink-0" style="background-color: var(--accent);"></span>
-          <span>ACCENT</span>
+        <div class="flex items-center gap-3 text-[#8A8882] font-mono text-[10px] uppercase tracking-wider">
+          <div class="flex items-center gap-1.5">
+            <span class="w-2 h-2 inline-block shrink-0" style="background-color: var(--accent);"></span>
+            <span>ACCENT</span>
+          </div>
+          <span class="text-[#262629]">|</span>
+          <a
+            href="https://github.com/sidchigo/kuro"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="hover:text-accent transition-colors"
+          >
+            [GITHUB ↗]
+          </a>
         </div>
         <AccentSwitcher showLabel={false} />
       </footer>
