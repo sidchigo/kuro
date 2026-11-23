@@ -21,6 +21,9 @@
     "drizzle-orm": "^0.45.4",
     "zod": "^4.6.6"
   },
+  "overrides": {
+    "cookie": "^0.7.2"
+  },
   "devDependencies": {
     "@sveltejs/adapter-node": "^5.2.12",
     "@sveltejs/kit": "^2.19.0",
